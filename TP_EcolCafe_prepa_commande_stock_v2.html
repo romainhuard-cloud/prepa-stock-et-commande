@@ -1,0 +1,2028 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TP – Gestion de Commande et de Stock | EcolCafé | Lycée Vaucanson</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --vert:#4a9c5d;--vert-clair:#d4edda;--vert-fonce:#2d7a45;
+  --bleu:#4a87c0;--bleu-clair:#d0e6f7;--bleu-fonce:#2b5f96;
+  --gris:#8a9bac;--gris-clair:#e8ecf0;--gris-tres-clair:#f4f6f8;
+  --blanc:#ffffff;--rouge:#e05252;--rouge-clair:#fde8e8;
+  --texte:#2c3e50;--radius:10px;--shadow:0 4px 16px rgba(44,62,80,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Barlow',sans-serif;background:var(--gris-tres-clair);color:var(--texte);min-height:100vh;}
+
+/* HEADER */
+header{
+  background:
+    linear-gradient(135deg,rgba(43,95,150,0.65) 0%,rgba(45,122,69,0.62) 100%),
+    url("https://img.pikbest.com/wp/202343/coffee-bean-background-isolated-frame-perfect-for-backgrounds-or-textures_9974791.jpg!sw800") center/cover no-repeat;
+  color:#fff;padding:16px 28px;display:flex;align-items:center;gap:20px;
+  box-shadow:0 4px 22px rgba(0,0,0,.28);position:sticky;top:0;z-index:1000;
+}
+header img.logo{height:68px;border-radius:8px;background:#fff;padding:4px;box-shadow:0 2px 10px rgba(0,0,0,.3);}
+.header-text h1{font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;line-height:1.2;}
+.header-text p{font-size:.82rem;opacity:.85;margin-top:2px;}
+.header-right{margin-left:auto;display:flex;gap:10px;align-items:flex-start;}
+.header-machine{flex:1;display:flex;align-items:center;justify-content:center;}
+.header-machine span{font-family:'Barlow Condensed',sans-serif;font-size:2.2rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,0.4),0 0 30px rgba(255,255,255,0.15);opacity:0.95;}
+.hbox{background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 14px;text-align:center;}
+.hbox-label{font-size:.68rem;opacity:.8;text-transform:uppercase;letter-spacing:1px;}
+#timer{font-family:'Barlow Condensed',monospace;font-size:1.75rem;font-weight:700;letter-spacing:2px;}
+#timer.urgent{color:#ffcc00;animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+#score-display{font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;}
+
+/* PROGRESS */
+.progress-section{background:#fff;padding:13px 28px;border-bottom:2px solid var(--gris-clair);box-shadow:0 2px 8px rgba(0,0,0,.08);position:sticky;top:101px;z-index:999;}
+.progress-header{display:flex;justify-content:space-between;margin-bottom:7px;font-size:.8rem;color:var(--gris);font-weight:600;}
+.progress-bar-track{background:var(--gris-clair);border-radius:20px;height:13px;overflow:hidden;}
+.progress-bar-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--bleu),var(--vert));transition:width .5s cubic-bezier(.4,0,.2,1);width:0%;}
+.progress-milestones{display:flex;justify-content:space-between;margin-top:7px;}
+.milestone{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.68rem;color:var(--gris);font-weight:600;transition:color .3s;}
+.milestone-dot{width:11px;height:11px;border-radius:50%;background:var(--gris-clair);border:2px solid var(--gris);transition:all .3s;}
+.milestone.done .milestone-dot{background:var(--vert);border-color:var(--vert-fonce);}
+.milestone.done{color:var(--vert-fonce);}
+
+/* CONTAINER */
+.container{max-width:900px;margin:0 auto;padding:28px 18px 60px;}
+
+/* INTRO */
+.intro-box{background:#fff;border-radius:var(--radius);padding:22px 26px;margin-bottom:26px;box-shadow:var(--shadow);border-left:5px solid var(--bleu);}
+.intro-box h2{font-family:'Barlow Condensed',sans-serif;font-size:1.15rem;color:var(--bleu-fonce);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;}
+.intro-box p{font-size:.93rem;line-height:1.6;color:#555;margin-bottom:7px;}
+.machine-info{background:var(--bleu-clair);border-radius:8px;padding:13px 16px;margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.machine-info-item{font-size:.84rem;}
+.machine-info-item strong{color:var(--bleu-fonce);}
+
+/* SECTION */
+.section-block{background:#fff;border-radius:var(--radius);padding:0;margin-bottom:22px;box-shadow:var(--shadow);overflow:hidden;}
+.section-header{background:linear-gradient(135deg,var(--bleu-fonce),var(--bleu));color:#fff;padding:13px 22px;display:flex;align-items:center;gap:12px;}
+.section-header.vert{background:linear-gradient(135deg,var(--vert-fonce),var(--vert));}
+.section-number{background:rgba(255,255,255,.25);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.05rem;flex-shrink:0;}
+.section-title-block h2{font-family:'Barlow Condensed',sans-serif;font-size:1.05rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.section-title-block p{font-size:.75rem;opacity:.85;margin-top:2px;}
+.section-body{padding:20px 22px;}
+
+/* QUESTION */
+.question-block{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--gris-clair);}
+.question-block:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.question-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--bleu);margin-bottom:5px;}
+.competence-tag{display:inline-block;background:var(--bleu-clair);color:var(--bleu-fonce);font-size:.66rem;font-weight:700;padding:2px 7px;border-radius:12px;margin-left:6px;text-transform:uppercase;}
+.question-text{font-size:.95rem;line-height:1.6;color:var(--texte);margin-bottom:12px;font-weight:500;}
+.context-box{background:var(--gris-tres-clair);border:1px solid var(--gris-clair);border-radius:8px;padding:11px 14px;margin-bottom:12px;font-size:.84rem;line-height:1.5;color:#555;}
+.context-box strong{color:var(--bleu-fonce);}
+
+/* OPTIONS */
+.options-list{display:flex;flex-direction:column;gap:7px;}
+.option-item{display:flex;align-items:center;gap:11px;padding:9px 13px;border:2px solid var(--gris-clair);border-radius:8px;cursor:pointer;transition:all .2s;font-size:.89rem;}
+.option-item:hover{border-color:var(--bleu);background:var(--bleu-clair);}
+.option-item input[type=radio],.option-item input[type=checkbox]{width:17px;height:17px;accent-color:var(--bleu);cursor:pointer;flex-shrink:0;}
+.option-item.correct{border-color:var(--vert);background:var(--vert-clair);}
+.option-item.incorrect{border-color:var(--rouge);background:var(--rouge-clair);}
+
+/* INPUTS */
+.text-input{width:100%;padding:9px 13px;border:2px solid var(--gris-clair);border-radius:8px;font-size:.93rem;font-family:'Barlow',sans-serif;transition:border-color .2s;resize:vertical;}
+.text-input:focus{outline:none;border-color:var(--bleu);}
+.text-input.correct{border-color:var(--vert);background:var(--vert-clair);}
+.text-input.incorrect{border-color:var(--rouge);background:var(--rouge-clair);}
+.number-input-wrap{display:flex;align-items:center;gap:9px;margin-top:8px;}
+.number-input{width:110px;padding:9px 12px;border:2px solid var(--gris-clair);border-radius:8px;font-size:.98rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-align:center;transition:border-color .2s;}
+.number-input:focus{outline:none;border-color:var(--bleu);}
+.number-input.correct{border-color:var(--vert);background:var(--vert-clair);}
+.number-input.incorrect{border-color:var(--rouge);background:var(--rouge-clair);}
+.unit-label{font-size:.88rem;color:var(--gris);}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:.86rem;margin-bottom:8px;}
+.tbl th{background:var(--bleu-fonce);color:#fff;padding:9px 11px;text-align:left;font-weight:700;font-size:.8rem;}
+.tbl td{padding:8px 11px;border-bottom:1px solid var(--gris-clair);}
+.tbl tr:nth-child(even) td{background:var(--gris-tres-clair);}
+.tbl input[type=text],.tbl input[type=number]{width:100%;padding:5px 9px;border:1.5px solid var(--gris-clair);border-radius:6px;font-size:.86rem;font-family:'Barlow',sans-serif;}
+.tbl input.correct{border-color:var(--vert);background:var(--vert-clair);}
+.tbl input.incorrect{border-color:var(--rouge);background:var(--rouge-clair);}
+.tbl .alert{color:var(--rouge);font-weight:700;}
+.tbl .ok-st{color:var(--vert-fonce);font-weight:600;}
+.tbl.vert th{background:var(--vert-fonce);}
+
+/* BON DE COMMANDE */
+.bon-cmd{background:var(--gris-tres-clair);border:2px dashed var(--bleu);border-radius:10px;padding:16px 20px;margin:12px 0;}
+.bon-cmd h4{font-family:'Barlow Condensed',sans-serif;font-size:.98rem;color:var(--bleu-fonce);margin-bottom:13px;text-transform:uppercase;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:10px;}
+.form-group label{display:block;font-size:.76rem;font-weight:700;color:var(--gris);margin-bottom:4px;text-transform:uppercase;}
+.form-group input,.form-group select{width:100%;padding:8px 11px;border:1.5px solid var(--gris-clair);border-radius:7px;font-size:.88rem;font-family:'Barlow',sans-serif;background:#fff;transition:border-color .2s;}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--bleu);}
+.form-group input.correct{border-color:var(--vert);background:var(--vert-clair);}
+.form-group input.incorrect{border-color:var(--rouge);background:var(--rouge-clair);}
+
+/* VALIDATE BTN */
+.validate-btn{margin-top:11px;padding:8px 20px;background:var(--bleu);color:#fff;border:none;border-radius:8px;font-family:'Barlow',sans-serif;font-size:.86rem;font-weight:700;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:5px;}
+.validate-btn:hover{background:var(--bleu-fonce);transform:translateY(-1px);}
+.validate-btn:disabled{background:var(--gris);cursor:not-allowed;transform:none;}
+
+/* FEEDBACK */
+.feedback{display:none;margin-top:9px;padding:9px 13px;border-radius:8px;font-size:.86rem;font-weight:600;align-items:center;gap:7px;}
+.feedback.show{display:flex;}
+.feedback.ok{background:var(--vert-clair);color:var(--vert-fonce);border:1px solid var(--vert);}
+.feedback.nok{background:var(--rouge-clair);color:var(--rouge);border:1px solid var(--rouge);}
+
+/* FINAL */
+.final-section{background:#fff;border-radius:var(--radius);padding:28px;box-shadow:var(--shadow);text-align:center;border:3px solid var(--vert);margin-top:24px;}
+.final-section h2{font-family:'Barlow Condensed',sans-serif;font-size:1.7rem;color:var(--vert-fonce);margin-bottom:8px;}
+.comp-summary{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:14px 0;}
+.comp-badge{padding:5px 13px;border-radius:20px;font-size:.8rem;font-weight:700;}
+.comp-badge.validated{background:var(--vert-clair);color:var(--vert-fonce);border:2px solid var(--vert);}
+.comp-badge.partial{background:#fff3cd;color:#856404;border:2px solid #ffc107;}
+.send-btn{margin-top:18px;padding:13px 34px;background:linear-gradient(135deg,var(--vert-fonce),var(--vert));color:#fff;border:none;border-radius:10px;font-family:'Barlow Condensed',sans-serif;font-size:1.25rem;font-weight:700;cursor:pointer;transition:all .25s;box-shadow:0 4px 16px rgba(45,122,69,.3);letter-spacing:.5px;}
+.send-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(45,122,69,.4);}
+.send-btn:disabled{background:var(--gris);cursor:not-allowed;transform:none;box-shadow:none;}
+#send-status{margin-top:12px;font-size:.88rem;color:var(--gris);font-style:italic;}
+#send-status.success{color:var(--vert-fonce);font-style:normal;font-weight:600;}
+#send-status.error{color:var(--rouge);font-style:normal;font-weight:600;}
+
+/* NOM ELEVE */
+.eleve-box{background:#fff;border-radius:var(--radius);padding:18px 22px;margin-bottom:22px;box-shadow:var(--shadow);border-left:5px solid var(--vert);display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;}
+.eleve-box .form-group{flex:1;min-width:180px;}
+.eleve-box label{display:block;font-size:.76rem;font-weight:700;color:var(--gris);margin-bottom:4px;text-transform:uppercase;}
+.eleve-box input{width:100%;padding:9px 13px;border:2px solid var(--gris-clair);border-radius:8px;font-size:.95rem;font-family:'Barlow',sans-serif;}
+.eleve-box input:focus{outline:none;border-color:var(--vert);}
+
+@media(max-width:600px){
+  header{flex-wrap:wrap;padding:12px 14px;}
+  .header-right{flex-direction:row;margin-left:0;width:100%;justify-content:space-between;}
+  .form-row{grid-template-columns:1fr;}
+  .machine-info{grid-template-columns:1fr;}
+}
+
+/* IMPRESSION PDF */
+@media print {
+  body > *:not(#print-page) { display: none !important; }
+  #print-page { display: block !important; }
+  #print-content { font-family: Arial, sans-serif; font-size: 11pt; color: #000; }
+  #print-content h1 { font-size: 16pt; color: #2b5f96; border-bottom: 2px solid #2b5f96; padding-bottom: 6px; margin-bottom: 12px; }
+  #print-content h2 { font-size: 13pt; color: #2d7a45; margin: 16px 0 6px; border-left: 4px solid #2d7a45; padding-left: 8px; }
+  #print-content h3 { font-size: 11pt; color: #2b5f96; margin: 10px 0 4px; }
+  #print-content table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 10pt; }
+  #print-content th { background: #2b5f96; color: #fff; padding: 6px 8px; text-align: left; }
+  #print-content td { padding: 5px 8px; border: 1px solid #ccc; vertical-align: top; }
+  #print-content tr:nth-child(even) td { background: #f4f6f8; }
+  #print-content .juste { color: #2d7a45; font-weight: bold; }
+  #print-content .faux { color: #e05252; font-weight: bold; }
+  #print-content .note-box { text-align: center; border: 3px solid #2b5f96; border-radius: 8px; padding: 14px; margin: 14px 0; }
+  #print-content .note-val { font-size: 36pt; font-weight: 900; color: #2b5f96; }
+  #print-content .entete { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+  #print-content .entete-logo { font-size: 9pt; color: #555; }
+  #print-content .rep-longue { background: #f4f6f8; border-left: 3px solid #8a9bac; padding: 6px 10px; margin: 4px 0 10px; font-size: 10pt; white-space: pre-wrap; word-break: break-word; }
+  @page { margin: 1.5cm; }
+}
+
+/* ── VERROU IDENTITÉ ── */
+.field-error{border-color:#e74c3c!important;background:#fff5f5!important;animation:shake .3s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.required-hint{display:none;color:#e74c3c;font-size:.72rem;font-weight:700;margin-top:3px;}
+.required-hint.show{display:block;}
+.eleve-box label .req{color:#e74c3c;margin-left:2px;}
+
+/* ── ÉVALUATION PRONOTE ── */
+.pronote-block{background:#fff;border-radius:var(--radius);padding:20px 24px;margin-bottom:10px;box-shadow:var(--shadow);border:2px solid var(--vert);}
+.pronote-filiere{font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gris);margin-bottom:12px;padding:6px 10px;background:var(--gris-tres-clair);border-radius:6px;}
+.pronote-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:9px 13px;border-radius:8px;margin-bottom:7px;border:2px solid rgba(0,0,0,.08);}
+.pronote-dot{width:28px;height:28px;border-radius:6px;flex-shrink:0;}
+.pronote-info{min-width:0;}
+.pronote-comp-code{font-weight:800;font-size:.82rem;font-family:'Barlow Condensed',sans-serif;letter-spacing:.3px;}
+.pronote-comp-lib{font-size:.77rem;color:#555;margin-top:1px;line-height:1.3;}
+.pronote-right{text-align:right;flex-shrink:0;}
+.pronote-niveau{font-family:'Barlow Condensed',sans-serif;font-size:.82rem;font-weight:700;white-space:nowrap;}
+.pronote-pts{font-size:.7rem;color:#888;margin-top:1px;}
+.pronote-score{font-size:.72rem;color:#666;margin-top:2px;}
+.pronote-legende{margin-top:14px;border-top:1px solid var(--gris-clair);padding-top:12px;}
+.pronote-legende-title{font-size:.72rem;color:var(--gris);font-weight:700;text-transform:uppercase;margin-bottom:7px;letter-spacing:.5px;}
+.pronote-legende-grid{display:flex;flex-wrap:wrap;gap:5px;}
+.pronote-leg-item{display:flex;align-items:center;gap:5px;font-size:.7rem;padding:3px 8px;border-radius:4px;background:var(--gris-tres-clair);}
+.pronote-leg-dot{width:14px;height:14px;border-radius:3px;flex-shrink:0;}
+.eval-intro-box{background:var(--bleu-clair);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:.83rem;line-height:1.5;color:var(--bleu-fonce);}
+
+</style>
+</head>
+<body>
+
+<header>
+  <img class="logo" src="https://services.ard.fr/fileadmin/users/grenoble-vaucanson/logo.jpg" alt="Lycée Vaucanson" onerror="this.style.display='none'">
+  <div class="header-text">
+    <h1>TP – Gestion de Commande &amp; de Stock</h1>
+    <p>BAC PRO PLP &nbsp;·&nbsp; CAP CIP</p>
+    <p>Lycée Polyvalent Vaucanson – Grenoble</p>
+  </div>
+  <div class="header-machine">
+    <span>☕ EcolCafé</span>
+  </div>
+  <div class="header-right">
+    <div class="hbox">
+      <div class="hbox-label">⏱ Temps restant</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div id="timer">2:00:00</div>
+        <button id="pause-btn" onclick="togglePause()" title="Pause / Reprendre" style="background:rgba(255,255,255,0.25);border:2px solid rgba(255,255,255,0.5);border-radius:6px;color:#fff;font-size:1rem;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;flex-shrink:0;">⏸</button>
+      </div>
+    </div>
+    <div class="hbox">
+      <div class="hbox-label">Questions</div>
+      <div id="score-display">0 / 40</div>
+    </div>
+  </div>
+</header>
+
+<div class="progress-section">
+  <div class="progress-header">
+    <span>Avancement du TP</span>
+    <span id="progress-text">0 / 40 questions validées</span>
+  </div>
+  <div class="progress-bar-track">
+    <div class="progress-bar-fill" id="progress-fill"></div>
+  </div>
+  <div class="progress-milestones">
+    <div class="milestone" id="m1"><div class="milestone-dot"></div>Partie 1</div>
+    <div class="milestone" id="m2"><div class="milestone-dot"></div>Partie 2</div>
+    <div class="milestone" id="m3"><div class="milestone-dot"></div>Partie 3</div>
+    <div class="milestone" id="m4"><div class="milestone-dot"></div>Partie 4</div>
+    <div class="milestone" id="m5"><div class="milestone-dot"></div>Terminé ✓</div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- NOM ELEVE -->
+<div class="eleve-box">
+  <div class="form-group">
+    <label>Nom <span class="req">*</span></label>
+    <input type="text" id="eleve-nom" placeholder="Votre nom...">
+    <div class="required-hint" id="hint-nom">⚠ Le nom est obligatoire</div>
+  </div>
+  <div class="form-group">
+    <label>Prénom <span class="req">*</span></label>
+    <input type="text" id="eleve-prenom" placeholder="Votre prénom...">
+    <div class="required-hint" id="hint-prenom">⚠ Le prénom est obligatoire</div>
+  </div>
+  <div class="form-group">
+    <label>Classe <span class="req">*</span></label>
+    <select id="eleve-classe">
+      <option value="">-- Sélectionnez votre classe --</option>
+      <option value="2PMIA1">2PMIA1</option>
+      <option value="2PMIA2">2PMIA2</option>
+      <option value="2PMIA3">2PMIA3</option>
+      <option value="2PMIA4">2PMIA4</option>
+      <option value="2PMIA5">2PMIA5</option>
+      <option value="1PLP">1PLP</option>
+      <option value="TPLP">TPLP</option>
+      <option value="1CIP G1">1CIP G1</option>
+      <option value="1CIP G2">1CIP G2</option>
+      <option value="2CIP G1">2CIP G1</option>
+      <option value="2CIP G2">2CIP G2</option>
+    </select>
+    <div class="required-hint" id="hint-classe">⚠ La classe est obligatoire</div>
+  </div>
+</div>
+
+<!-- INTRO -->
+<div class="intro-box">
+  <h2>📋 Mise en situation</h2>
+  <p>Vous êtes <strong>pilote de ligne de production</strong> au sein d'une entreprise utilisant la machine <strong>EcolCafé (Easycup)</strong> fabriquée par BEMA SAS (Vinay, 38). Cette machine automatique réalise le remplissage et l'operculage de dosettes de café compatibles Nespresso.</p>
+  <p>Ce TP porte sur la <strong>gestion du stock des consommables</strong>, la <strong>préparation de commandes clients</strong> et le <strong>suivi de production</strong>.</p>
+  <p>Répondez à chaque question puis cliquez sur <strong>« Valider »</strong>. Vous obtenez immédiatement un code couleur : <span style="color:var(--vert-fonce);font-weight:700;">vert = correct</span> · <span style="color:var(--rouge);font-weight:700;">rouge = à revoir</span>.</p>
+  <div class="machine-info">
+    <div class="machine-info-item"><strong>Machine :</strong> EASYCUP / 001</div>
+    <div class="machine-info-item"><strong>Constructeur :</strong> BEMA SAS – Vinay (38)</div>
+    <div class="machine-info-item"><strong>Fabrication :</strong> 2015</div>
+    <div class="machine-info-item"><strong>Production :</strong> Dosettes café type Nespresso</div>
+    <div class="machine-info-item"><strong>Capacité magasin :</strong> &gt; 600 dosettes vides</div>
+    <div class="machine-info-item"><strong>Cadence :</strong> 120 dosettes / heure</div>
+  </div>
+</div>
+
+<!-- ======== PARTIE 1 (ex-Partie 2) : Gestion du stock des consommables ======== -->
+<div class="section-block">
+  <div class="section-header vert">
+    <div class="section-number">1</div>
+    <div class="section-title-block">
+      <h2>Gestion du stock des consommables</h2>
+      <p>CP03 – Préparer · CP04 – Piloter · CP05 – Suivi de production</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <!-- Q1 (ex-Q9) -->
+    <div class="question-block" id="qb1">
+      <div class="question-label">Question 1 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">La durée de vie du moulin à café est d'environ <strong>100 000 capsules</strong>. Depuis la dernière révision, le compteur affiche <strong>87 400 capsules</strong>. Dans combien de jours faudra-t-il planifier la maintenance, sachant que la production est de <strong>840 dosettes/jour</strong> ?</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Posez votre calcul :</div>
+      <textarea class="text-input" id="q1-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q1-ans" placeholder="0" min="0">
+        <span class="unit-label">jours</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(1,14,16,'Correct ! Capsules restantes = 100 000 − 87 400 = 12 600. Durée = 12 600 ÷ 840 = 15 jours.','Calcul : Capsules restantes = 100 000 − 87 400 = 12 600. Durée = 12 600 ÷ 840 = 15 jours avant maintenance.')">✔ Valider</button>
+      <div class="feedback" id="fb1"></div>
+    </div>
+
+    <!-- Q2 (NOUVEAU - calcul stock sécurité avancé) -->
+    <div class="question-block" id="qb2">
+      <div class="question-label">Question 2 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Votre fournisseur de dosettes vides a un <strong>délai de livraison de 4 jours ouvrés</strong>. La consommation moyenne est de <strong>840 dosettes/jour</strong>. Quel doit être le <strong>stock minimum (point de commande)</strong> en intégrant un coefficient de sécurité de <strong>30%</strong> contre les retards et pics de production ?</div>
+      <div class="context-box"><strong>Formule :</strong> Point de commande = (Consommation journalière × Délai livraison) × (1 + coefficient sécurité)</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Posez votre calcul :</div>
+      <textarea class="text-input" id="q2-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q2-ans" placeholder="0" min="0">
+        <span class="unit-label">dosettes</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(2,4350,4380,'Excellent ! 840 × 4 = 3 360, puis × 1,3 = 4 368 dosettes. Le stock minimum est de 4 368 dosettes.','Calcul : Consommation pendant le délai = 840 × 4 = 3 360 dosettes. Avec sécurité 30% : 3 360 × 1,3 = 4 368 dosettes.')">✔ Valider</button>
+      <div class="feedback" id="fb2"></div>
+    </div>
+
+    <!-- Q3 (ex-Q6) - tableau stock avec ordre options modifié -->
+    <div class="question-block" id="qb3">
+      <div class="question-label">Question 3 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">Analysez le tableau de stock ci-dessous. <strong>Cochez les articles nécessitant une commande urgente</strong> (stock actuel &lt; stock minimum).</div>
+      <div class="context-box">
+        <table class="tbl">
+          <thead><tr><th>Référence</th><th>Désignation</th><th>Stock actuel</th><th>Stock mini</th><th>Unité</th></tr></thead>
+          <tbody>
+            <tr><td>RFID-BOX</td><td>Puce RFID boîtes</td><td class="ok-st">280</td><td>100</td><td>pcs</td></tr>
+            <tr><td>BOITE-EMBAL</td><td>Boîtes d'emballage</td><td class="alert">8</td><td>23</td><td>boîtes</td></tr>
+            <tr><td>CAFE-GRAIN-01</td><td>Café en grain Arabica</td><td class="ok-st">15</td><td>5</td><td>kg</td></tr>
+            <tr><td>OPERC-PAPIER</td><td>Rouleau papier operculage</td><td class="alert">1</td><td>3</td><td>rouleaux</td></tr>
+            <tr><td>ACCO0056</td><td>Dosette vide Nespresso</td><td class="alert">42</td><td>600</td><td>pcs</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q3" value="RFID"> RFID-BOX – Puce RFID (stock : 280)</label>
+        <label class="option-item"><input type="checkbox" name="q3" value="BOITE"> BOITE-EMBAL – Boîtes d'emballage (stock : 8)</label>
+        <label class="option-item"><input type="checkbox" name="q3" value="CAFE"> CAFE-GRAIN-01 – Café en grain Arabica (stock : 15 kg)</label>
+        <label class="option-item"><input type="checkbox" name="q3" value="OPERC"> OPERC-PAPIER – Rouleau papier operculage (stock : 1)</label>
+        <label class="option-item"><input type="checkbox" name="q3" value="ACCO0056"> ACCO0056 – Dosette vide Nespresso (stock : 42)</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(3,['BOITE','OPERC','ACCO0056'],'Parfait ! Les 3 articles en rupture sont : boîtes (8&lt;23), papier operculage (1&lt;3) et dosettes (42&lt;600).','Les articles à commander sont ceux avec stock &lt; stock mini : BOITE-EMBAL (8&lt;23), OPERC-PAPIER (1&lt;3), ACCO0056 (42&lt;600). Le café (15&gt;5) et les RFID (280&gt;100) sont suffisants.')">✔ Valider</button>
+      <div class="feedback" id="fb3"></div>
+    </div>
+
+    <!-- Q4 (NOUVEAU - analyse ABC / criticité) -->
+    <div class="question-block" id="qb4">
+      <div class="question-label">Question 4 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">Parmi les <strong>5 articles du tableau précédent</strong>, lequel est le <strong>plus critique pour la production</strong> (arrêt machine immédiat en cas de rupture) ?</div>
+      <div class="context-box"><strong>Critères de criticité :</strong> Un article est critique si son absence stoppe immédiatement la production de la machine EcolCafé.</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q4" value="a"> RFID-BOX (puces RFID pour boîtes finies)</label>
+        <label class="option-item"><input type="radio" name="q4" value="b"> BOITE-EMBAL (boîtes d'emballage final)</label>
+        <label class="option-item"><input type="radio" name="q4" value="c"> ACCO0056 (dosettes vides Nespresso)</label>
+        <label class="option-item"><input type="radio" name="q4" value="d"> CAFE-GRAIN-01 (café en grain Arabica)</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(4,'c','Correct ! Sans dosettes vides, la machine ne peut pas fonctionner du tout. C\'est le consommable de base.','Les dosettes vides (ACCO0056) sont le consommable critique : sans elles, aucune production possible. Les autres articles peuvent être complétés en aval (boîtes, RFID) ou ont du stock (café).')">✔ Valider</button>
+      <div class="feedback" id="fb4"></div>
+    </div>
+
+    <!-- Q5 (ex-Q7) - calcul commande 5j -->
+    <div class="question-block" id="qb5">
+      <div class="question-label">Question 5 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Calculez la <strong>quantité de dosettes vides à commander</strong> pour couvrir <strong>5 jours de production</strong> en ajoutant un stock de sécurité.</div>
+      <div class="context-box">
+        <strong>Données :</strong><br>
+        – Cadence de production : 120 dosettes/heure<br>
+        – Durée de poste : 7 heures/jour<br>
+        – Stock actuel : 42 dosettes<br>
+        – Stock de sécurité souhaité : 200 dosettes
+      </div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Posez votre calcul :</div>
+      <textarea class="text-input" id="q5-calc" rows="3" placeholder="Exemple : 120 × 7 × 5 = ..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q5-ans" placeholder="0" min="0">
+        <span class="unit-label">dosettes à commander</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(5,4300,4400,'Excellent ! 120×7×5 = 4 200 dosettes nécessaires. À commander : 4 200 − 42 + 200 = 4 358 dosettes.','Revoir le calcul : Production = 120 dos/h × 7h × 5j = 4 200. Qté à commander = 4 200 − stock actuel (42) + sécurité (200) = 4 358 dosettes.')">✔ Valider</button>
+      <div class="feedback" id="fb5"></div>
+    </div>
+
+    <!-- Q6 (NOUVEAU - taux de rotation) -->
+    <div class="question-block" id="qb6">
+      <div class="question-label">Question 6 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">L'entreprise a consommé <strong>156 000 dosettes</strong> sur l'année. Le stock moyen sur l'année a été de <strong>5 200 dosettes</strong>. Calculez le <strong>taux de rotation du stock</strong> (= nombre de fois où le stock se renouvelle dans l'année).</div>
+      <div class="context-box"><strong>Formule :</strong> Taux de rotation = Consommation annuelle ÷ Stock moyen</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Posez votre calcul :</div>
+      <textarea class="text-input" id="q6-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q6-ans" placeholder="0" min="0" step="0.1">
+        <span class="unit-label">rotations/an</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(6,29,31,'Correct ! Taux de rotation = 156 000 ÷ 5 200 = 30 rotations/an. Le stock se renouvelle environ tous les 12 jours.','Calcul : 156 000 ÷ 5 200 = 30 rotations par an. Cela signifie que tout le stock est consommé puis remplacé environ 30 fois dans l\'année.')">✔ Valider</button>
+      <div class="feedback" id="fb6"></div>
+    </div>
+
+    <!-- Q7 (ex-Q8) - ordre vérifications -->
+    <div class="question-block" id="qb7">
+      <div class="question-label">Question 7 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">En début de poste, vous devez <strong>vérifier et anticiper les réapprovisionnements</strong>. Dans quel ordre effectuez-vous ces vérifications ? Numérotez de 1 à 4 les actions ci-dessous (entrez le numéro dans chaque case).</div>
+      <div class="context-box"><strong>Rappel :</strong> En tant que pilote, vous êtes responsable de la continuité de l'approvisionnement de la ligne.</div>
+      <table class="tbl vert">
+        <thead><tr><th>N° ordre</th><th>Action à réaliser</th></tr></thead>
+        <tbody>
+          <tr><td><input type="number" class="q7-order" data-action="A" min="1" max="4" placeholder="1-4" style="width:60px;"></td><td>Acheminer les consommables aux postes de travail</td></tr>
+          <tr><td><input type="number" class="q7-order" data-action="B" min="1" max="4" placeholder="1-4" style="width:60px;"></td><td>Renseigner le cahier de consignes et de liaison</td></tr>
+          <tr><td><input type="number" class="q7-order" data-action="C" min="1" max="4" placeholder="1-4" style="width:60px;"></td><td>Consulter le tableau de stock et identifier les articles en alerte</td></tr>
+          <tr><td><input type="number" class="q7-order" data-action="D" min="1" max="4" placeholder="1-4" style="width:60px;"></td><td>Déclencher une commande urgente si stock &lt; stock mini</td></tr>
+        </tbody>
+      </table>
+      <button class="validate-btn" onclick="valOrder7()">✔ Valider</button>
+      <div class="feedback" id="fb7"></div>
+    </div>
+
+    <!-- Q8 (NOUVEAU - procédure réception livraison) -->
+    <div class="question-block" id="qb8">
+      <div class="question-label">Question 8 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Une livraison de dosettes vides arrive en zone de stockage. Quelle est la <strong>procédure correcte de réception</strong> ? (Cochez toutes les actions à effectuer)</div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q8" value="a"> Vérifier la quantité livrée par rapport au bon de commande</label>
+        <label class="option-item"><input type="checkbox" name="q8" value="b"> Mettre directement les dosettes en production sans vérification</label>
+        <label class="option-item"><input type="checkbox" name="q8" value="c"> Contrôler l'état des emballages (pas d'humidité, pas de chocs)</label>
+        <label class="option-item"><input type="checkbox" name="q8" value="d"> Mettre à jour le tableau de stock (entrée magasin)</label>
+        <label class="option-item"><input type="checkbox" name="q8" value="e"> Signaler tout écart au responsable et à l'acheteur</label>
+        <label class="option-item"><input type="checkbox" name="q8" value="f"> Jeter le bon de livraison après vérification</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(8,['a','c','d','e'],'Parfait ! Vérification qty, contrôle qualité emballage, mise à jour stock, signalement des écarts.','Les actions correctes sont : vérifier la quantité, contrôler l\'état, mettre à jour le stock, signaler les écarts. NE PAS mettre directement en production sans contrôle, NE PAS jeter le bon de livraison (à archiver).')">✔ Valider</button>
+      <div class="feedback" id="fb8"></div>
+    </div>
+
+    <!-- Q9 (ex-Q10) - actions fin de production -->
+    <div class="question-block" id="qb9">
+      <div class="question-label">Question 9 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">En fin de production, quelles sont les obligations du pilote concernant le réapprovisionnement et le rangement de la ligne ? (Réponse rédigée)</div>
+      <textarea class="text-input" id="q9-ans" rows="4" placeholder="Décrivez les actions à effectuer en fin de production..."></textarea>
+      <button class="validate-btn" onclick="valTexte(9,['réapprov','reapprov','remplir','ranger','nettoyer','vérif','consigne','stock'],3,'Bien rédigé ! Le pilote doit : réapprovisionner les consommables, nettoyer/ranger les postes, et renseigner le cahier de consignes.','Développez votre réponse : réapprovisionner les consommables (dosettes, café, papier), nettoyer et ranger les postes de travail, renseigner le cahier de consignes et les documents de suivi.')">✔ Valider</button>
+      <div class="feedback" id="fb9"></div>
+    </div>
+
+    <!-- Q10 (NOUVEAU - calcul taux rupture annuel) -->
+    <div class="question-block" id="qb10">
+      <div class="question-label">Question 10 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">Sur l'année, la machine a subi <strong>14 arrêts pour rupture de dosettes vides</strong>, totalisant <strong>21 heures d'arrêt</strong>. Le temps total d'ouverture annuel est de <strong>1 680 heures</strong>. Calculez le <strong>taux d'indisponibilité dû aux ruptures de stock</strong> (en %).</div>
+      <div class="context-box"><strong>Formule :</strong> Taux indisponibilité = (Temps d'arrêt rupture ÷ Temps d'ouverture) × 100</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Posez votre calcul :</div>
+      <textarea class="text-input" id="q10-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q10-ans" placeholder="0" min="0" step="0.01">
+        <span class="unit-label">%</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(10,1.20,1.30,'Correct ! Taux = (21 ÷ 1 680) × 100 = 1,25 %. C\'est élevé, une amélioration s\'impose.','Calcul : (21h ÷ 1 680h) × 100 = 1,25 %. Ce taux est significatif : il faut améliorer la gestion des stocks.')">✔ Valider</button>
+      <div class="feedback" id="fb10"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ======== PARTIE 2 (ex-Partie 4) : Indicateurs de production ======== -->
+<div class="section-block">
+  <div class="section-header">
+    <div class="section-number">2</div>
+    <div class="section-title-block">
+      <h2>Indicateurs de production et communication</h2>
+      <p>CP05 – Suivi · CP06 – Modes opératoires · CP08 – Amélioration</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <!-- Q11 (ex-Q17) - calcul TRS -->
+    <div class="question-block" id="qb11">
+      <div class="question-label">Question 11 <span class="competence-tag">CP06</span></div>
+      <div class="question-text">La cadence nominale de la machine est de 120 dosettes/heure. Sur la semaine, la machine a produit <strong>4 230 dosettes</strong> en <strong>42 heures</strong>. Calculez le <strong>Taux de Rendement Synthétique (TRS)</strong>.</div>
+      <div class="context-box"><strong>Rappel :</strong> TRS = (Production réelle / Production théorique) × 100. La production théorique est calculée avec la cadence nominale sur la même durée.</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Posez votre calcul :</div>
+      <textarea class="text-input" id="q11-calc" rows="3" placeholder="Posez votre calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q11-ans" placeholder="0" min="0" max="100" step="0.1">
+        <span class="unit-label">%</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(11,82,86,'Excellent ! Prod. théorique = 120×42 = 5 040. TRS = (4 230/5 040)×100 ≈ 83,9 %.','Prod. théorique = 120 dos/h × 42h = 5 040 dos. TRS = (4 230 ÷ 5 040) × 100 ≈ 83,9 %.')">✔ Valider</button>
+      <div class="feedback" id="fb11"></div>
+    </div>
+
+    <!-- Q12 (NOUVEAU - calcul TRS détaillé : Dispo × Perf × Qualité) -->
+    <div class="question-block" id="qb12">
+      <div class="question-label">Question 12 <span class="competence-tag">CP06</span></div>
+      <div class="question-text">Sur un poste de <strong>7 heures</strong>, la machine EcolCafé a connu :</div>
+      <div class="context-box">
+        – Temps d'ouverture (TO) : 7h = <strong>420 min</strong><br>
+        – Arrêts pannes/réglages : <strong>30 min</strong> (donc temps de fonctionnement TF = 390 min)<br>
+        – Production réalisée : <strong>720 dosettes</strong> (cadence nominale = 120 dos/h, soit 2 dos/min)<br>
+        – Dosettes non conformes : <strong>20 dosettes</strong> rebutées<br>
+        Calculez le <strong>TRS complet</strong> via Disponibilité × Performance × Qualité.
+      </div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Posez votre calcul (D × P × Q × 100) :</div>
+      <textarea class="text-input" id="q12-calc" rows="4" placeholder="D = TF/TO = ...&#10;P = Prod réelle / (TF × cadence) = ...&#10;Q = Bonnes / Total = ...&#10;TRS = D × P × Q × 100 = ..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q12-ans" placeholder="0" min="0" max="100" step="0.1">
+        <span class="unit-label">%</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(12,82,86,'Bravo ! D=390/420=92,86%; P=720/(390×2)=92,3%; Q=700/720=97,2%; TRS=0,9286×0,923×0,972 ≈ 83,3%.','Calcul : Disponibilité = 390/420 = 92,86%. Performance = 720/(390×2) = 92,3%. Qualité = (720−20)/720 = 97,2%. TRS = 0,9286 × 0,923 × 0,972 × 100 ≈ 83,3%.')">✔ Valider</button>
+      <div class="feedback" id="fb12"></div>
+    </div>
+
+    <!-- Q13 (ex-Q16) - cadence réelle -->
+    <div class="question-block" id="qb13">
+      <div class="question-label">Question 13 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">En fin de semaine, vous relevez les compteurs. La machine a produit <strong>4 230 dosettes</strong> sur une période de <strong>42 heures de travail</strong>. Calculez la <strong>cadence réelle</strong> de la machine.</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q13-calc" rows="2" placeholder="Posez votre calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q13-ans" placeholder="0" min="0" step="0.1">
+        <span class="unit-label">dosettes / heure</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(13,99,102,'Correct ! Cadence réelle = 4 230 ÷ 42 ≈ 100,7 dosettes/heure.','Cadence réelle = Production totale ÷ Durée = 4 230 ÷ 42 ≈ 100,7 dosettes/heure.')">✔ Valider</button>
+      <div class="feedback" id="fb13"></div>
+    </div>
+
+    <!-- Q14 (NOUVEAU - perte de production due à la sous-cadence) -->
+    <div class="question-block" id="qb14">
+      <div class="question-label">Question 14 <span class="competence-tag">CP08</span></div>
+      <div class="question-text">La cadence nominale est de <strong>120 dos/h</strong> mais la cadence réelle calculée précédemment est de <strong>≈ 100,7 dos/h</strong>. Combien de dosettes ont été <strong>perdues</strong> sur les 42 heures à cause de cet écart de cadence ?</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q14-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q14-ans" placeholder="0" min="0">
+        <span class="unit-label">dosettes perdues</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(14,800,815,'Excellent ! Théorique = 120×42 = 5 040. Réel = 4 230. Perte = 5 040 − 4 230 = 810 dosettes.','Calcul : Production théorique = 120 × 42 = 5 040 dosettes. Perte = 5 040 − 4 230 = 810 dosettes manquantes.')">✔ Valider</button>
+      <div class="feedback" id="fb14"></div>
+    </div>
+
+    <!-- Q15 (ex-Q18) - alarme défaut operculage MAIS position de la bonne réponse modifiée (b -> d) -->
+    <div class="question-block" id="qb15">
+      <div class="question-label">Question 15 <span class="competence-tag">CP06</span></div>
+      <div class="question-text">Un client se plaint d'avoir reçu des dosettes avec un <strong>opercule mal soudé</strong>. Quelle alarme la machine aurait-elle dû afficher ? Quelle aurait été la procédure à suivre ?</div>
+      <div class="options-list" style="margin-bottom:10px;">
+        <label class="option-item"><input type="radio" name="q15a" value="a"> Alarme « Magasin dosette vide »</label>
+        <label class="option-item"><input type="radio" name="q15a" value="b"> Alarme « Moulin à café vide »</label>
+        <label class="option-item"><input type="radio" name="q15a" value="c"> Alarme « Défaut évacuation »</label>
+        <label class="option-item"><input type="radio" name="q15a" value="d"> Alarme « Défaut operculage »</label>
+      </div>
+      <div style="font-size:.86rem;font-weight:600;margin-bottom:7px;">Procédure à suivre :</div>
+      <textarea class="text-input" id="q15-proc" rows="3" placeholder="Décrivez la procédure à suivre..."></textarea>
+      <button class="validate-btn" onclick="valQ15()">✔ Valider</button>
+      <div class="feedback" id="fb15"></div>
+    </div>
+
+    <!-- Q16 (NOUVEAU - analyse cause racine 5M / Ishikawa) -->
+    <div class="question-block" id="qb16">
+      <div class="question-label">Question 16 <span class="competence-tag">CP08</span></div>
+      <div class="question-text">Vous constatez que <strong>10% des dosettes</strong> de la production du jour sont mal operculées. Vous appliquez la méthode des <strong>5M</strong> (Main d'œuvre, Matière, Méthode, Milieu, Matériel). Parmi ces causes possibles, laquelle est la <strong>plus probable cause racine</strong> ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q16" value="a"> Matériel : usure ou déréglage du système de soudure thermique</label>
+        <label class="option-item"><input type="radio" name="q16" value="b"> Main d'œuvre : opérateur insuffisamment formé au démarrage</label>
+        <label class="option-item"><input type="radio" name="q16" value="c"> Milieu : température de l'atelier trop élevée pour le café</label>
+        <label class="option-item"><input type="radio" name="q16" value="d"> Méthode : ordre de production non respecté</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(16,'a','Correct ! Un défaut systématique d\'operculage (10%) pointe en priorité vers le Matériel : système de soudure (température, pression, usure).','La cause la plus probable d\'un défaut d\'operculage répété est Matériel (5M) : déréglage du thermo-scellage, usure de la résistance, problème de pression de soudure. Les autres causes sont possibles mais moins systémiques.')">✔ Valider</button>
+      <div class="feedback" id="fb16"></div>
+    </div>
+
+    <!-- Q17 (ex-Q19) - amélioration ruptures texte -->
+    <div class="question-block" id="qb17">
+      <div class="question-label">Question 17 <span class="competence-tag">CP08</span></div>
+      <div class="question-text">Vous constatez que les dosettes vides sont régulièrement en rupture de stock, causant des arrêts de production. <strong>Proposez une amélioration du processus</strong> pour éviter ces ruptures.</div>
+      <textarea class="text-input" id="q17-ans" rows="5" placeholder="Décrivez votre proposition d'amélioration..."></textarea>
+      <button class="validate-btn" onclick="valTexte(17,['seuil','alerte','mini','commande','automatique','anticip','semaine','hebdo','stock','fournisseur'],2,'Bonne proposition ! Exemples : paramétrer un stock minimum avec alerte automatique, mettre en place des commandes hebdomadaires anticipées, ou établir un planning de réapprovisionnement régulier.','Proposez une amélioration concrète : mettre en place un stock minimum avec alerte, créer des commandes périodiques anticipées, surveiller les tendances de consommation, ou établir un contrat cadre avec le fournisseur.')">✔ Valider</button>
+      <div class="feedback" id="fb17"></div>
+    </div>
+
+    <!-- Q18 (NOUVEAU - définir indicateurs de performance pertinents) -->
+    <div class="question-block" id="qb18">
+      <div class="question-label">Question 18 <span class="competence-tag">CP08</span></div>
+      <div class="question-text">Le responsable de production vous demande de mettre en place un <strong>tableau de bord hebdomadaire</strong>. Parmi ces indicateurs, lesquels sont <strong>pertinents</strong> pour piloter la machine EcolCafé au quotidien ? (Cochez toutes les bonnes réponses)</div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q18" value="a"> Nombre de dosettes produites / semaine</label>
+        <label class="option-item"><input type="checkbox" name="q18" value="b"> TRS (Taux de Rendement Synthétique)</label>
+        <label class="option-item"><input type="checkbox" name="q18" value="c"> Couleur des t-shirts des opérateurs</label>
+        <label class="option-item"><input type="checkbox" name="q18" value="d"> Taux de rebut (% dosettes non conformes)</label>
+        <label class="option-item"><input type="checkbox" name="q18" value="e"> Nombre d'arrêts machine et leur cause</label>
+        <label class="option-item"><input type="checkbox" name="q18" value="f"> Nombre de jours fériés du mois</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(18,['a','b','d','e'],'Parfait ! Production, TRS, taux de rebut et arrêts machine sont les KPI clés du pilote.','Les indicateurs pertinents sont : Production hebdo (a), TRS (b), Taux de rebut (d), Arrêts machine (e). La couleur des t-shirts et les jours fériés ne sont pas des KPI de production.')">✔ Valider</button>
+      <div class="feedback" id="fb18"></div>
+    </div>
+
+    <!-- Q19 (ex-Q20) - compte-rendu fin de poste -->
+    <div class="question-block" id="qb19">
+      <div class="question-label">Question 19 <span class="competence-tag">CP01</span></div>
+      <div class="question-text">Rédigez un <strong>compte-rendu de fin de poste</strong> destiné au pilote du poste suivant, concernant l'état du stock et les commandes clients traitées aujourd'hui.</div>
+      <textarea class="text-input" id="q19-ans" rows="7" placeholder="Compte-rendu de fin de poste :&#10;&#10;Commandes traitées : ...&#10;État du stock : ...&#10;Points d'attention pour le poste suivant : ..."></textarea>
+      <button class="validate-btn" onclick="valTexte(19,['commande','stock','dosette','attention','poste','suivi','café','réapprov'],3,'Excellent compte-rendu ! Pensez à y inclure les commandes traitées, l\'état du stock et les points d\'attention.','Rédigez un compte-rendu complet : commandes clients traitées (références, quantités), état du stock (articles à risque), actions effectuées et points d\'attention pour le prochain poste.')">✔ Valider</button>
+      <div class="feedback" id="fb19"></div>
+    </div>
+
+    <!-- Q20 (NOUVEAU - email de réponse client réclamation) -->
+    <div class="question-block" id="qb20">
+      <div class="question-label">Question 20 <span class="competence-tag">CP01</span></div>
+      <div class="question-text">Un client a renvoyé un colis de <strong>20 dosettes mal operculées</strong> avec une réclamation. Rédigez un <strong>court courrier (email)</strong> de réponse au client présentant : les excuses, la cause identifiée, l'action corrective et la compensation proposée.</div>
+      <textarea class="text-input" id="q20-ans" rows="6" placeholder="Objet : ...&#10;&#10;Madame, Monsieur,&#10;&#10;..."></textarea>
+      <button class="validate-btn" onclick="valTexte(20,['excuse','désol','desol','client','remplac','correctif','contrôle','controle','qualité','qualite','réclamation','reclamation','operculage','dédommag','dedommag'],3,'Bien rédigé ! Le courrier doit comporter excuses, identification du problème, action corrective et compensation.','Un courrier de réclamation client doit comporter : excuses, reconnaissance du problème, cause identifiée (défaut operculage), action corrective (contrôle qualité renforcé) et proposition de dédommagement (remplacement, geste commercial).')">✔ Valider</button>
+      <div class="feedback" id="fb20"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ======== PARTIE 3 (ex-Partie 1) : Présentation machine et flux ======== -->
+<div class="section-block">
+  <div class="section-header vert">
+    <div class="section-number">3</div>
+    <div class="section-title-block">
+      <h2>Présentation de la machine et des flux</h2>
+      <p>CP02 – S'informer et analyser · CP03 – Préparer le travail</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <!-- Q21 (ex-Q3) - laser - bonne réponse en position D au lieu de B -->
+    <div class="question-block" id="qb21">
+      <div class="question-label">Question 21 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">La machine dispose d'un capteur laser au poste de dosage. Quel est son rôle ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q21" value="a"> Lire le code-barres de la dosette</label>
+        <label class="option-item"><input type="radio" name="q21" value="b"> Détecter la présence de l'opercule</label>
+        <label class="option-item"><input type="radio" name="q21" value="c"> Scanner la température du café</label>
+        <label class="option-item"><input type="radio" name="q21" value="d"> Mesurer la quantité de café tassé dans la dosette</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(21,'d','Correct ! La cellule laser mesure la quantité de café tassé dans la dosette.','La cellule laser mesure la quantité de café tassé dans la dosette (doc. BEMA : « une cellule laser mesure la quantité de café tassé dans la dosette »).')">✔ Valider</button>
+      <div class="feedback" id="fb21"></div>
+    </div>
+
+    <!-- Q22 (NOUVEAU - autres dispositifs de sécurité/contrôle) -->
+    <div class="question-block" id="qb22">
+      <div class="question-label">Question 22 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">En plus de la cellule laser de dosage, quels <strong>dispositifs de contrôle ou de sécurité</strong> sont présents sur la machine EcolCafé ? (Cochez toutes les bonnes réponses)</div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q22" value="a"> Capteur de présence dosette en magasin</label>
+        <label class="option-item"><input type="checkbox" name="q22" value="b"> Détecteur GPS de localisation</label>
+        <label class="option-item"><input type="checkbox" name="q22" value="c"> Capteur de niveau du café dans le moulin</label>
+        <label class="option-item"><input type="checkbox" name="q22" value="d"> Carter de protection avec contact de sécurité</label>
+        <label class="option-item"><input type="checkbox" name="q22" value="e"> Bouton d'arrêt d'urgence</label>
+        <label class="option-item"><input type="checkbox" name="q22" value="f"> Reconnaissance vocale de l'opérateur</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(22,['a','c','d','e'],'Parfait ! Capteurs présence, niveau, carter sécurité et arrêt d\'urgence sont les dispositifs standards.','Les dispositifs présents sont : capteur présence dosettes (a), capteur niveau café (c), carter de sécurité (d), arrêt d\'urgence (e). GPS et reconnaissance vocale ne sont pas standards sur ce type de machine.')">✔ Valider</button>
+      <div class="feedback" id="fb22"></div>
+    </div>
+
+    <!-- Q23 (ex-Q1) - fonction principale - position changée (b -> c) -->
+    <div class="question-block" id="qb23">
+      <div class="question-label">Question 23 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">Quelle est la fonction principale de la machine EcolCafé (Easycup) ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q23" value="a"> Emballer des boîtes de céréales automatiquement</label>
+        <label class="option-item"><input type="radio" name="q23" value="b"> Mélanger et chauffer du café en grain</label>
+        <label class="option-item"><input type="radio" name="q23" value="c"> Remplir et operculer des dosettes de café compatibles Nespresso</label>
+        <label class="option-item"><input type="radio" name="q23" value="d"> Contrôler la qualité du café par analyse chimique</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(23,'c','Correct ! La machine Easycup remplit et opercule des dosettes de café compatibles Nespresso.','La machine Easycup réalise le remplissage (moulin + dosage café moulu) et l\'operculage (soudure papier) de dosettes compatibles Nespresso.')">✔ Valider</button>
+      <div class="feedback" id="fb23"></div>
+    </div>
+
+    <!-- Q24 (NOUVEAU - principe de l'operculage thermique) -->
+    <div class="question-block" id="qb24">
+      <div class="question-label">Question 24 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">Sur quel <strong>principe physique</strong> repose la fixation du papier d'operculage sur la dosette ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q24" value="a"> Collage par adhésif chimique liquide</label>
+        <label class="option-item"><input type="radio" name="q24" value="b"> Soudure thermique (chaleur + pression)</label>
+        <label class="option-item"><input type="radio" name="q24" value="c"> Agrafage métallique automatique</label>
+        <label class="option-item"><input type="radio" name="q24" value="d"> Couture par fil polymère</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(24,'b','Correct ! L\'operculage utilise une soudure thermique : la résistance chauffe le papier qui adhère à la dosette sous pression.','L\'operculage est réalisé par soudure thermique : application de chaleur (résistance électrique) + pression sur le papier d\'operculage qui fond légèrement et se colle à la dosette.')">✔ Valider</button>
+      <div class="feedback" id="fb24"></div>
+    </div>
+
+    <!-- Q25 (ex-Q2) - 3 consommables principaux (positions modifiées) -->
+    <div class="question-block" id="qb25">
+      <div class="question-label">Question 25 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">Quels sont les <strong>3 consommables principaux</strong> nécessaires au fonctionnement de la machine EcolCafé ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q25" value="a"> Encre d'impression</label>
+        <label class="option-item"><input type="checkbox" name="q25" value="b"> Café en grain</label>
+        <label class="option-item"><input type="checkbox" name="q25" value="c"> Huile de lubrification</label>
+        <label class="option-item"><input type="checkbox" name="q25" value="d"> Dosettes vides (compatibles Nespresso)</label>
+        <label class="option-item"><input type="checkbox" name="q25" value="e"> Papier d'operculage</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(25,['b','d','e'],'Parfait ! Les 3 consommables sont : café en grain, dosettes vides et papier d\'operculage.','Les 3 consommables principaux sont : café en grain (Poste 3 – moulin), dosettes vides (Poste 1) et papier operculage (Poste 4). L\'huile et l\'encre ne sont pas des consommables de production courants.')">✔ Valider</button>
+      <div class="feedback" id="fb25"></div>
+    </div>
+
+    <!-- Q26 (NOUVEAU - consommables maintenance / lubrification) -->
+    <div class="question-block" id="qb26">
+      <div class="question-label">Question 26 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Indépendamment des consommables de production, quels articles le pilote doit-il <strong>aussi suivre dans son stock</strong> pour assurer la maintenance préventive de la machine ? (Cochez toutes les bonnes réponses)</div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q26" value="a"> Filtres à air pour le moulin</label>
+        <label class="option-item"><input type="checkbox" name="q26" value="b"> Lubrifiant alimentaire (graisse blanche)</label>
+        <label class="option-item"><input type="checkbox" name="q26" value="c"> Téléviseurs de salle de pause</label>
+        <label class="option-item"><input type="checkbox" name="q26" value="d"> Produits de nettoyage agréés contact alimentaire</label>
+        <label class="option-item"><input type="checkbox" name="q26" value="e"> Pneus de voiture</label>
+        <label class="option-item"><input type="checkbox" name="q26" value="f"> Joints d'étanchéité de rechange</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(26,['a','b','d','f'],'Parfait ! Filtres, lubrifiant alimentaire, produits de nettoyage et joints sont les articles maintenance.','Les articles de maintenance courants sont : filtres à air (a), lubrifiant alimentaire (b), produits de nettoyage agréés (d) et joints d\'étanchéité (f). Les téléviseurs et pneus ne sont pas en lien avec la machine.')">✔ Valider</button>
+      <div class="feedback" id="fb26"></div>
+    </div>
+
+    <!-- Q27 (ex-Q4) - capacité magasin -->
+    <div class="question-block" id="qb27">
+      <div class="question-label">Question 27 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Quelle est la capacité maximale du <strong>magasin de dosettes vides</strong> de la machine EcolCafé ?</div>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q27-ans" placeholder="0" min="0">
+        <span class="unit-label">dosettes</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(27,590,650,'Correct ! Le magasin peut contenir plus de 600 dosettes vides.','Incorrect. Selon la documentation BEMA, le magasin peut contenir plus de 600 dosettes vides.')">✔ Valider</button>
+      <div class="feedback" id="fb27"></div>
+    </div>
+
+    <!-- Q28 (NOUVEAU - calcul autonomie magasin) -->
+    <div class="question-block" id="qb28">
+      <div class="question-label">Question 28 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Le magasin contient <strong>600 dosettes vides</strong> et la cadence est de <strong>120 dosettes/heure</strong>. Calculez l'<strong>autonomie</strong> du magasin (= temps avant qu'il ne soit vide si on ne réapprovisionne pas).</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Posez votre calcul :</div>
+      <textarea class="text-input" id="q28-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q28-ans" placeholder="0" min="0" step="0.1">
+        <span class="unit-label">heures</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(28,4.9,5.1,'Correct ! 600 ÷ 120 = 5 heures d\'autonomie. Au-delà, il faut réapprovisionner le magasin.','Calcul : 600 dosettes ÷ 120 dos/h = 5 heures d\'autonomie. Le pilote doit donc recharger toutes les 5 h pour éviter les arrêts.')">✔ Valider</button>
+      <div class="feedback" id="fb28"></div>
+    </div>
+
+    <!-- Q29 (ex-Q5) - alarme moulin + action - positions changées : c+a au lieu de b+b -->
+    <div class="question-block" id="qb29">
+      <div class="question-label">Question 29 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">Quelle alarme s'affiche si <strong>3 dosettes consécutives</strong> ne contiennent pas la bonne quantité de café ? Quelle action l'opérateur doit-il effectuer ?</div>
+      <div class="options-list" style="margin-bottom:10px;">
+        <label class="option-item"><input type="radio" name="q29a" value="a"> Alarme « Défaut operculage »</label>
+        <label class="option-item"><input type="radio" name="q29a" value="b"> Alarme « Défaut température »</label>
+        <label class="option-item"><input type="radio" name="q29a" value="c"> Alarme « Moulin à café vide »</label>
+        <label class="option-item"><input type="radio" name="q29a" value="d"> Alarme « Magasin dosette vide »</label>
+      </div>
+      <div style="font-size:.86rem;font-weight:600;margin-bottom:7px;">Action à effectuer :</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q29b" value="a"> Remettre du café et appuyer sur « OK »</label>
+        <label class="option-item"><input type="radio" name="q29b" value="b"> Appeler immédiatement la maintenance</label>
+        <label class="option-item"><input type="radio" name="q29b" value="c"> Redémarrer la machine d'urgence</label>
+        <label class="option-item"><input type="radio" name="q29b" value="d"> Changer la cellule laser</label>
+      </div>
+      <button class="validate-btn" onclick="valDouble(29,'q29a','c','q29b','a','Correct ! Alarme « Moulin à café vide » → Remettre du café et appuyer sur OK.','Doc. : si 3 dosettes non conformes → alarme « Moulin à café vide ». Action : remettre du café et appuyer sur OK.')">✔ Valider</button>
+      <div class="feedback" id="fb29"></div>
+    </div>
+
+    <!-- Q30 (NOUVEAU - diagnostic alarme par symptôme) -->
+    <div class="question-block" id="qb30">
+      <div class="question-label">Question 30 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">La machine s'arrête. Vous observez : <strong>les dosettes ne se présentent plus au poste de dosage</strong>. Quelle alarme est probablement affichée ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q30" value="a"> Alarme « Défaut operculage »</label>
+        <label class="option-item"><input type="radio" name="q30" value="b"> Alarme « Magasin dosette vide »</label>
+        <label class="option-item"><input type="radio" name="q30" value="c"> Alarme « Moulin à café vide »</label>
+        <label class="option-item"><input type="radio" name="q30" value="d"> Alarme « Surcharge moteur »</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(30,'b','Correct ! Si les dosettes ne se présentent plus, c\'est que le magasin est vide → alarme « Magasin dosette vide ».','Le symptôme « plus de dosettes au poste de dosage » indique que le magasin amont est vide → l\'alarme « Magasin dosette vide » se déclenche. Solution : recharger le magasin.')">✔ Valider</button>
+      <div class="feedback" id="fb30"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ======== PARTIE 4 (ex-Partie 3) : Préparation de commandes clients ======== -->
+<div class="section-block">
+  <div class="section-header">
+    <div class="section-number">4</div>
+    <div class="section-title-block">
+      <h2>Préparation de commandes clients</h2>
+      <p>CP01 – Communiquer · CP03 – Préparer · CP04 – Piloter</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="context-box" style="margin-bottom:18px;">
+      <strong>Situation :</strong> Votre entreprise produit des boîtes de dosettes de café personnalisées pour des clients. Vous recevez les commandes clients et devez préparer la production en conséquence. Chaque boîte contient un assortiment de capsules de différents types de café.
+    </div>
+
+    <!-- Q31 (ex-Q11) - calcul dosettes commande -->
+    <div class="question-block" id="qb31">
+      <div class="question-label">Question 31 <span class="competence-tag">CP04</span></div>
+      <div class="question-text">Vous recevez la commande client suivante. <strong>Calculez le nombre total de dosettes</strong> à produire.</div>
+      <div class="context-box">
+        <table class="tbl">
+          <thead><tr><th>Commande client n° 2024-147</th><th>Nb boîtes</th><th>Dosettes/boîte</th><th>Total dosettes</th></tr></thead>
+          <tbody>
+            <tr><td>Café Arabica (Mag. Base)</td><td>12</td><td>6</td><td>?</td></tr>
+            <tr><td>Café Robusta (Mag. 1)</td><td>12</td><td>4</td><td>?</td></tr>
+            <tr><td>Café Décaféiné (Mag. 2)</td><td>12</td><td>2</td><td>?</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:8px;">Le client commande <strong>12 boîtes</strong>, chacune contenant un assortiment : 6 Arabica + 4 Robusta + 2 Décaféiné.</p>
+      </div>
+      <div style="font-size:.86rem;font-weight:600;margin-bottom:8px;">Total dosettes à produire pour cette commande :</div>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q31-ans" placeholder="0" min="0">
+        <span class="unit-label">dosettes au total</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(31,144,144,'Exact ! (6+4+2) × 12 = 12 × 12 = 144 dosettes au total.','(6 Arabica + 4 Robusta + 2 Décaféiné) × 12 boîtes = 12 × 12 = 144 dosettes.')">✔ Valider</button>
+      <div class="feedback" id="fb31"></div>
+    </div>
+
+    <!-- Q32 (NOUVEAU - commande complexe avec rebut prévisionnel) -->
+    <div class="question-block" id="qb32">
+      <div class="question-label">Question 32 <span class="competence-tag">CP04</span></div>
+      <div class="question-text">Le commercial vous transmet une commande de <strong>50 boîtes de 10 dosettes</strong>. Le taux de rebut habituel de la machine est de <strong>4%</strong>. Combien de dosettes faut-il <strong>lancer en production</strong> pour livrer la commande complète, en tenant compte des rebuts ?</div>
+      <div class="context-box"><strong>Astuce :</strong> Si 4% sont jetés, alors seulement 96% sont utilisables. Donc Production lancée = Besoin / 0,96.</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Posez votre calcul :</div>
+      <textarea class="text-input" id="q32-calc" rows="3" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q32-ans" placeholder="0" min="0">
+        <span class="unit-label">dosettes à produire</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(32,520,525,'Excellent ! Besoin = 50×10 = 500 dosettes. Production = 500 / 0,96 ≈ 521 dosettes à lancer.','Calcul : Besoin client = 50 × 10 = 500 dosettes. Avec 4% de rebut : Production lancée = 500 ÷ 0,96 ≈ 521 dosettes (arrondi sup.).')">✔ Valider</button>
+      <div class="feedback" id="fb32"></div>
+    </div>
+
+    <!-- Q33 (ex-Q12) - tableau O/N -->
+    <div class="question-block" id="qb33">
+      <div class="question-label">Question 33 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Avant de lancer la production, vous devez <strong>vérifier que le stock est suffisant</strong> pour honorer la commande client n° 2024-147. Complétez le tableau de vérification.</div>
+      <div class="context-box">
+        <strong>Rappel commande :</strong> 72 dosettes Arabica · 48 dosettes Robusta · 24 dosettes Décaféiné · 12 boîtes d'emballage
+      </div>
+      <table class="tbl vert" id="q33-table">
+        <thead><tr><th>Consommable</th><th>Besoin commande</th><th>Stock actuel</th><th>Suffisant ? (O/N)</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Café en grain</td>
+            <td>~1 kg</td>
+            <td>15 kg</td>
+            <td><input type="text" class="q33-in" data-rep="O" placeholder="O ou N" maxlength="1" style="width:60px;text-align:center;text-transform:uppercase;"></td>
+          </tr>
+          <tr>
+            <td>Boîtes d'emballage</td>
+            <td>12 boîtes</td>
+            <td>8 boîtes</td>
+            <td><input type="text" class="q33-in" data-rep="N" placeholder="O ou N" maxlength="1" style="width:60px;text-align:center;text-transform:uppercase;"></td>
+          </tr>
+          <tr>
+            <td>Dosettes vides (total)</td>
+            <td>144 pcs</td>
+            <td>42 pcs</td>
+            <td><input type="text" class="q33-in" data-rep="N" placeholder="O ou N" maxlength="1" style="width:60px;text-align:center;text-transform:uppercase;"></td>
+          </tr>
+          <tr>
+            <td>Papier operculage</td>
+            <td>~1 rouleau</td>
+            <td>1 rouleau</td>
+            <td><input type="text" class="q33-in" data-rep="O" placeholder="O ou N" maxlength="1" style="width:60px;text-align:center;text-transform:uppercase;"></td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="validate-btn" onclick="valQ33()">✔ Valider</button>
+      <div class="feedback" id="fb33"></div>
+    </div>
+
+    <!-- Q34 (NOUVEAU - calcul délai de production) -->
+    <div class="question-block" id="qb34">
+      <div class="question-label">Question 34 <span class="competence-tag">CP04</span></div>
+      <div class="question-text">Le client demande une livraison <strong>sous 48 heures</strong>. La commande nécessite la production de <strong>900 dosettes</strong> à la cadence de <strong>120 dos/h</strong>. La machine fonctionne <strong>7 h/jour</strong>. <strong>Pourrez-vous tenir le délai ?</strong> Justifiez par le calcul.</div>
+      <div class="context-box"><strong>Astuce :</strong> Calculez le temps de production nécessaire, comparez aux 14 h disponibles sur 2 jours.</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Temps de production nécessaire :</div>
+      <textarea class="text-input" id="q34-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q34-ans" placeholder="0" min="0" step="0.1">
+        <span class="unit-label">heures</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(34,7.4,7.6,'Correct ! 900 ÷ 120 = 7,5 h. Sur 2 jours, on a 14 h dispo, donc OK : délai tenu sans problème.','Calcul : 900 dosettes ÷ 120 dos/h = 7,5 heures de production. Sur 48h ouvrées (= 14h de production sur 2 jours), le délai est largement tenable.')">✔ Valider</button>
+      <div class="feedback" id="fb34"></div>
+    </div>
+
+    <!-- Q35 (ex-Q13) - fiche approvisionnement -->
+    <div class="question-block" id="qb35">
+      <div class="question-label">Question 35 <span class="competence-tag">CP01</span></div>
+      <div class="question-text">Vous devez <strong>rédiger une fiche de demande d'approvisionnement urgent</strong> pour les articles manquants, destinée au responsable de production. Remplissez le bon ci-dessous.</div>
+      <div class="bon-cmd">
+        <h4>📋 Demande d'approvisionnement urgent</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date de la demande</label>
+            <input type="text" id="q35-date" placeholder="JJ/MM/AAAA">
+          </div>
+          <div class="form-group">
+            <label>N° de commande client</label>
+            <input type="text" id="q35-cmd" placeholder="Ex : 2024-147">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Article 1 manquant – Référence</label>
+            <input type="text" id="q35-ref1" placeholder="Référence article...">
+          </div>
+          <div class="form-group">
+            <label>Quantité nécessaire</label>
+            <input type="text" id="q35-qty1" placeholder="Quantité...">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Article 2 manquant – Référence</label>
+            <input type="text" id="q35-ref2" placeholder="Référence article...">
+          </div>
+          <div class="form-group">
+            <label>Quantité nécessaire</label>
+            <input type="text" id="q35-qty2" placeholder="Quantité...">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Urgence</label>
+            <select id="q35-urgence">
+              <option value="">Sélectionner...</option>
+              <option value="normale">Normale (48h)</option>
+              <option value="urgent">Urgent (24h)</option>
+              <option value="tres-urgent">Très urgent (même jour)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Motif</label>
+            <input type="text" id="q35-motif" placeholder="Ex : Rupture de stock, commande client en attente...">
+          </div>
+        </div>
+      </div>
+      <button class="validate-btn" onclick="valQ35()">✔ Valider la fiche</button>
+      <div class="feedback" id="fb35"></div>
+    </div>
+
+    <!-- Q36 (NOUVEAU - bon de commande fournisseur avec calcul prix) -->
+    <div class="question-block" id="qb36">
+      <div class="question-label">Question 36 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Le fournisseur Nespro propose les dosettes vides à <strong>0,12 € HT pièce</strong>. La TVA est de <strong>20 %</strong>. Calculez le <strong>montant TTC</strong> d'une commande de <strong>4 358 dosettes</strong>.</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Posez votre calcul :</div>
+      <textarea class="text-input" id="q36-calc" rows="2" placeholder="HT = ... × ...&#10;TTC = HT × 1,20 = ..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q36-ans" placeholder="0" min="0" step="0.01">
+        <span class="unit-label">€ TTC</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(36,627,628,'Correct ! HT = 4 358 × 0,12 = 522,96 €. TTC = 522,96 × 1,20 = 627,55 €.','Calcul : Montant HT = 4 358 × 0,12 = 522,96 €. Montant TTC = 522,96 × 1,20 = 627,55 €.')">✔ Valider</button>
+      <div class="feedback" id="fb36"></div>
+    </div>
+
+    <!-- Q37 (ex-Q14) - calcul stock restant -->
+    <div class="question-block" id="qb37">
+      <div class="question-label">Question 37 <span class="competence-tag">CP04</span></div>
+      <div class="question-text">Une deuxième commande client arrive pendant votre poste. Elle porte sur <strong>20 boîtes de 12 dosettes</strong> (Arabica uniquement). Votre stock de dosettes vient d'être réapprovisionné avec <strong>4 358 dosettes</strong>. Combien de dosettes vous restera-t-il après cette commande ?</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q37-calc" rows="2" placeholder="Posez votre calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q37-ans" placeholder="0" min="0">
+        <span class="unit-label">dosettes restantes</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(37,4110,4120,'Correct ! 20 boîtes × 12 dosettes = 240. Stock restant = 4 358 − 240 = 4 118 dosettes.','20 boîtes × 12 dosettes = 240 dosettes à produire. Stock restant = 4 358 − 240 = 4 118 dosettes.')">✔ Valider</button>
+      <div class="feedback" id="fb37"></div>
+    </div>
+
+    <!-- Q38 (NOUVEAU - prévisionnel multi-commandes) -->
+    <div class="question-block" id="qb38">
+      <div class="question-label">Question 38 <span class="competence-tag">CP04</span></div>
+      <div class="question-text">Trois nouvelles commandes arrivent dans la journée :</div>
+      <div class="context-box">
+        – Commande A : <strong>50 boîtes × 10 dosettes</strong><br>
+        – Commande B : <strong>30 boîtes × 12 dosettes</strong><br>
+        – Commande C : <strong>40 boîtes × 8 dosettes</strong><br>
+        <br>
+        Stock actuel après précédente commande : <strong>4 118 dosettes</strong>.
+      </div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul du stock restant après les 3 commandes :</div>
+      <textarea class="text-input" id="q38-calc" rows="3" placeholder="Total dosettes nécessaires = ...&#10;Stock restant = 4 118 − ..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q38-ans" placeholder="0" min="0">
+        <span class="unit-label">dosettes restantes</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(38,2935,2940,'Excellent ! Total = 500+360+320 = 1 180. Stock = 4 118 − 1 180 = 2 938 dosettes restantes.','Calcul : A=50×10=500, B=30×12=360, C=40×8=320 → Total = 1 180. Stock restant = 4 118 − 1 180 = 2 938 dosettes.')">✔ Valider</button>
+      <div class="feedback" id="fb38"></div>
+    </div>
+
+    <!-- Q39 (ex-Q15) - infos suivi production -->
+    <div class="question-block" id="qb39">
+      <div class="question-label">Question 39 <span class="competence-tag">CP01</span></div>
+      <div class="question-text">En tant que pilote, après avoir traité une commande client, vous devez <strong>renseigner le document de suivi de production</strong>. Quelles informations devez-vous y noter ? (Cochez toutes les réponses correctes)</div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q39" value="a"> Le nom du conducteur de bus de la livraison</label>
+        <label class="option-item"><input type="checkbox" name="q39" value="b"> La quantité de dosettes produites</label>
+        <label class="option-item"><input type="checkbox" name="q39" value="c"> Les éventuelles anomalies ou défauts constatés</label>
+        <label class="option-item"><input type="checkbox" name="q39" value="d"> Le numéro et la date de la commande client</label>
+        <label class="option-item"><input type="checkbox" name="q39" value="e"> Le stock consommé et le stock restant</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(39,['b','c','d','e'],'Parfait ! Le suivi doit comporter : n° commande, quantités produites, anomalies et état du stock.','Le nom du conducteur de bus n\'est pas pertinent. Les informations à noter sont : n° commande/date, quantité produite, anomalies/défauts et stock consommé/restant.')">✔ Valider</button>
+      <div class="feedback" id="fb39"></div>
+    </div>
+
+    <!-- Q40 (NOUVEAU - traçabilité lot fabrication) -->
+    <div class="question-block" id="qb40">
+      <div class="question-label">Question 40 <span class="competence-tag">CP01</span></div>
+      <div class="question-text">Pour la <strong>traçabilité agroalimentaire</strong> de la commande, vous devez attribuer un <strong>numéro de lot</strong> aux dosettes produites. Parmi ces propositions, laquelle respecte les bonnes pratiques de traçabilité ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q40" value="a"> Lot1 (numéro arbitraire)</label>
+        <label class="option-item"><input type="radio" name="q40" value="b"> 2024-147 (uniquement le n° de commande)</label>
+        <label class="option-item"><input type="radio" name="q40" value="c"> ECC-20240315-P3-L01 (machine + date + poste + lot)</label>
+        <label class="option-item"><input type="radio" name="q40" value="d"> Le nom du client suffit</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(40,'c','Correct ! Un bon n° de lot doit identifier la machine, la date, le poste et la séquence pour permettre une traçabilité complète.','Le n° de lot doit être unique et permettre de retracer : la machine (ECC=EcolCafé), la date de production (20240315), le poste (P3), et la séquence (L01). C\'est obligatoire en agroalimentaire.')">✔ Valider</button>
+      <div class="feedback" id="fb40"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- FINAL -->
+<div class="final-section" id="final-section" style="display:none;">
+  <h2>🎓 Récapitulatif du TP</h2>
+  <p style="color:#555;font-size:.93rem;">Évaluation par compétences :</p>
+  <div id="comp-eval-container"><p style="color:#aaa;font-size:.88rem;text-align:center;padding:12px;">Renseignez votre identité puis cliquez sur «&nbsp;Voir mon évaluation&nbsp;».</p></div>
+
+  <div style="background:var(--bleu-clair);border-radius:10px;padding:16px 20px;margin:18px 0;text-align:left;font-size:.88rem;line-height:1.8;">
+    <strong style="color:var(--bleu-fonce);">📌 Comment envoyer votre copie en 2 étapes :</strong><br>
+    <span style="color:#333;">
+      <b>Étape 1 —</b> Cliquez sur <em>« 📄 Télécharger ma correction en PDF »</em> : une fenêtre d'impression s'ouvre → sélectionnez <strong>« Enregistrer en PDF »</strong> et sauvegardez le fichier.<br>
+      <b>Étape 2 —</b> Cliquez sur <em>« 📤 Envoyer au professeur »</em> : le dossier de votre classe s'ouvre → déposez-y le fichier PDF.
+    </span>
+  </div>
+
+  <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:6px;">
+    <button class="send-btn" style="background:linear-gradient(135deg,var(--bleu-fonce),var(--bleu));" onclick="telechargerPDF()">📄 Télécharger ma correction en PDF</button>
+    <button class="send-btn" id="send-btn" onclick="ouvrirDepot()">📤 Envoyer au professeur</button>
+  </div>
+  <div id="send-status"></div>
+</div>
+
+<div style="text-align:center;margin-top:22px;">
+  <button onclick="showFinal()" style="padding:12px 28px;background:var(--bleu-fonce);color:#fff;border:none;border-radius:8px;font-family:'Barlow',sans-serif;font-size:.98rem;font-weight:700;cursor:pointer;">
+    📊 Voir mon évaluation &amp; envoyer
+  </button>
+</div>
+
+</div><!-- /container -->
+
+<!-- ===== PAGE D'IMPRESSION (cachée à l'écran, visible uniquement à l'impression) ===== -->
+<div id="print-page" style="display:none;">
+  <div id="print-content"></div>
+</div>
+<script>
+// ====== TIMER ======
+const DUREE = 2 * 3600;
+let secondes = DUREE;
+let timerPaused = false;
+const timerEl = document.getElementById('timer');
+let timerInterval = setInterval(() => {
+  if (timerPaused) return;
+  secondes--;
+  if (secondes < 0) { secondes = 0; clearInterval(timerInterval); }
+  let h = Math.floor(secondes / 3600);
+  let m = Math.floor((secondes % 3600) / 60);
+  let s = secondes % 60;
+  timerEl.textContent = h + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  if (secondes < 900) timerEl.classList.add('urgent');
+}, 1000);
+
+function togglePause() {
+  timerPaused = !timerPaused;
+  const btn = document.getElementById('pause-btn');
+  if (timerPaused) {
+    btn.textContent = '▶';
+    btn.title = 'Reprendre le chronomètre';
+    btn.style.background = 'rgba(255,204,0,0.4)';
+    timerEl.style.opacity = '0.5';
+  } else {
+    btn.textContent = '⏸';
+    btn.title = 'Mettre en pause';
+    btn.style.background = 'rgba(255,255,255,0.25)';
+    timerEl.style.opacity = '1';
+  }
+}
+
+// ====== TRACKING COMPORTEMENTAL ======
+const tpStartTime = Date.now();
+let keyCount = 0;
+let pasteCount = 0;
+let pasteDetails = []; // { question, heure }
+let keyActiveMs = 0;
+let keyLastStart = null;
+let inactiveMs = 0;
+let inactiveLastStart = null;
+const INACTIVITY_THRESHOLD = 30000; // 30s sans action = inactif
+let inactivityTimer = null;
+const qTimestamps = {}; // { q1: { start: Date, validated: Date, seconds: N } }
+let currentQStart = Date.now();
+
+// Démarrage de la question courante
+function startQTimer(qid) {
+  qTimestamps[qid] = { start: Date.now() };
+}
+
+// Frappe clavier
+document.addEventListener('keydown', () => {
+  if (!keyLastStart) keyLastStart = Date.now();
+  resetInactivity();
+});
+document.addEventListener('keyup', () => {
+  keyCount++;
+  if (keyLastStart) { keyActiveMs += Date.now() - keyLastStart; keyLastStart = null; }
+  resetInactivity();
+});
+
+// Copier-coller
+document.addEventListener('paste', (e) => {
+  pasteCount++;
+  // Identifier dans quelle question on est
+  const target = e.target;
+  let qid = '';
+  const block = target ? target.closest('[id^="qb"]') : null;
+  if (block) qid = block.id.replace('qb','Q');
+  const heure = new Date().toLocaleTimeString('fr-FR');
+  pasteDetails.push({ zone: qid||'zone inconnue', heure });
+  resetInactivity();
+});
+
+// Détection inactivité
+function resetInactivity() {
+  if (inactiveLastStart) {
+    inactiveMs += Date.now() - inactiveLastStart;
+    inactiveLastStart = null;
+  }
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(() => {
+    inactiveLastStart = Date.now();
+  }, INACTIVITY_THRESHOLD);
+}
+// Lancer le timer d'inactivité dès le départ
+resetInactivity();
+
+// Enregistrer l'heure de validation de chaque question
+function recordQTime(id) {
+  const now = Date.now();
+  if (!qTimestamps['q'+id]) qTimestamps['q'+id] = { start: tpStartTime };
+  qTimestamps['q'+id].validated = now;
+  qTimestamps['q'+id].seconds = Math.round((now - qTimestamps['q'+id].start) / 1000);
+}
+
+function fmtDuration(ms) {
+  if (ms < 0) ms = 0;
+  const tot = Math.round(ms / 1000);
+  const h = Math.floor(tot/3600);
+  const m = Math.floor((tot%3600)/60);
+  const s = tot%60;
+  if (h > 0) return h+'h '+String(m).padStart(2,'0')+'min '+String(s).padStart(2,'0')+'s';
+  if (m > 0) return m+'min '+String(s).padStart(2,'0')+'s';
+  return s+'s';
+}
+
+function getTrackingStats() {
+  const totalMs = Date.now() - tpStartTime;
+  // Finaliser les compteurs en cours
+  let keyMs = keyActiveMs + (keyLastStart ? Date.now()-keyLastStart : 0);
+  let inactMs = inactiveMs + (inactiveLastStart ? Date.now()-inactiveLastStart : 0);
+  return {
+    totalMs,
+    keyMs,
+    inactMs,
+    keyCount,
+    pasteCount,
+    pasteDetails,
+    tempsPasseElapsed: DUREE - secondes, // secondes écoulées sur le chrono
+  };
+}
+
+// ====== SCORE ======
+const scores = {};
+// Mapping des questions vers les compétences PLP (référentiel par défaut)
+// Ordre des questions (40) :
+// Partie 1 (Q1-Q10): Gestion stock - CP03/CP05
+// Partie 2 (Q11-Q20): Indicateurs - CP05/CP06/CP08/CP01
+// Partie 3 (Q21-Q30): Présentation machine - CP02/CP03
+// Partie 4 (Q31-Q40): Commandes clients - CP01/CP03/CP04
+const qComp = {
+  q1:'CP05',q2:'CP03',q3:'CP05',q4:'CP05',q5:'CP03',
+  q6:'CP05',q7:'CP05',q8:'CP03',q9:'CP05',q10:'CP05',
+  q11:'CP06',q12:'CP06',q13:'CP05',q14:'CP08',q15:'CP06',
+  q16:'CP08',q17:'CP08',q18:'CP08',q19:'CP01',q20:'CP01',
+  q21:'CP02',q22:'CP02',q23:'CP02',q24:'CP02',q25:'CP02',
+  q26:'CP03',q27:'CP03',q28:'CP03',q29:'CP02',q30:'CP02',
+  q31:'CP04',q32:'CP04',q33:'CP03',q34:'CP04',q35:'CP01',
+  q36:'CP03',q37:'CP04',q38:'CP04',q39:'CP01',q40:'CP01'
+};
+const qTitres = ['',
+  // Partie 1 - Gestion stock
+  'Planification maintenance moulin','Calcul stock minimum securite',
+  'Analyse tableau de stock','Article le plus critique',
+  'Calcul quantite a commander','Calcul taux de rotation stock',
+  'Ordre des verifications','Procedure reception livraison',
+  'Actions fin de production','Calcul taux indispo ruptures',
+  // Partie 2 - Indicateurs
+  'Calcul TRS simple','Calcul TRS complet (DxPxQ)',
+  'Calcul cadence reelle','Calcul perte de production',
+  'Alarme defaut operculage','Analyse cause racine 5M',
+  'Amelioration gestion ruptures','Choix des indicateurs KPI',
+  'Compte-rendu fin de poste','Email reclamation client',
+  // Partie 3 - Présentation machine
+  'Role capteur laser','Autres dispositifs securite',
+  'Fonction de la machine','Principe operculage thermique',
+  'Consommables principaux','Consommables maintenance',
+  'Capacite magasin dosettes','Calcul autonomie magasin',
+  'Alarme moulin + action','Diagnostic alarme par symptome',
+  // Partie 4 - Commandes clients
+  'Calcul total dosettes commande','Calcul commande avec rebut',
+  'Verification stock vs commande','Calcul delai de production',
+  'Fiche approvisionnement urgent','Calcul montant TTC commande',
+  'Calcul stock restant','Calcul prevision multi-commandes',
+  'Informations suivi production','Numero de lot tracabilite'];
+const corrections = ['',
+  // Partie 1
+  'Capsules restantes=12600. Duree=12600/840=15 jours.',
+  '840x4=3360, x1,3=4368 dosettes (point de commande).',
+  'BOITE (8<23), OPERC (1<3), ACCO0056 (42<600).',
+  'ACCO0056 dosettes vides - critique car arret immediat.',
+  '120x7x5=4200 dosettes. A commander: 4200-42+200=4358 dosettes.',
+  '156000/5200 = 30 rotations par an.',
+  'Ordre: 1-Consulter stock, 2-Commander si rupture, 3-Acheminer aux postes, 4-Renseigner cahier.',
+  'Verifier qty, controler etat, mettre a jour stock, signaler ecarts.',
+  'Reapprovisionner, nettoyer/ranger les postes, renseigner le cahier de consignes.',
+  '(21/1680)x100 = 1,25%.',
+  // Partie 2
+  'Prod. theorique=120x42=5040. TRS=(4230/5040)x100=83,9%.',
+  'D=92,86% x P=92,3% x Q=97,2% = TRS 83,3%.',
+  'Cadence reelle=4230/42=100,7 dosettes/heure.',
+  'Theorique=5040, reel=4230 -> Perte=810 dosettes.',
+  'Alarme Defaut operculage - Arret, verification, rebut dosettes, signalement maintenance.',
+  'Cause racine 5M = Materiel (deréglage soudure thermique).',
+  'Stock minimum avec alerte automatique, commandes periodiques anticipees.',
+  'KPI utiles: Production, TRS, Taux rebut, Arrets machine.',
+  'Commandes traitees, etat du stock, points d attention pour le poste suivant.',
+  'Email avec excuses, cause, action correctrice et compensation.',
+  // Partie 3
+  'Mesurer la quantite de cafe tasse dans la dosette.',
+  'Capteur dosettes, capteur niveau cafe, carter securite, arret urgence.',
+  'Remplir et operculer des dosettes de cafe compatibles Nespresso.',
+  'Soudure thermique (chaleur + pression) du papier sur la dosette.',
+  'Cafe en grain, dosettes vides, papier d operculage.',
+  'Filtres air, lubrifiant alimentaire, produits nettoyage, joints.',
+  'Plus de 600 dosettes.',
+  '600/120 = 5 heures d autonomie.',
+  'Alarme Moulin a cafe vide - Remettre du cafe et appuyer sur OK.',
+  'Plus de dosettes presentees -> Alarme Magasin dosette vide.',
+  // Partie 4
+  '(6+4+2)x12=144 dosettes au total.',
+  '500/0,96 = 521 dosettes a lancer en production.',
+  'Cafe: O, Boites: N (8<12), Dosettes: N (42<144), Papier: O.',
+  '900/120 = 7,5h - Delai 48h tenable largement.',
+  'Fiche complete avec ACCO0056 + BOITE-EMBAL, quantites et urgence.',
+  '4358x0,12=522,96 HT, x1,20=627,55 TTC.',
+  '20x12=240 dosettes. Stock restant=4358-240=4118 dosettes.',
+  'A=500, B=360, C=320 -> Total=1180. Reste 4118-1180=2938.',
+  'N commande, quantite produite, anomalies, stock consomme et restant.',
+  'Format ECC-AAAAMMJJ-Pn-Lnn (machine+date+poste+lot).'];
+
+function updateProgress() {
+  const done = Object.keys(scores).length;
+  const pts = Object.values(scores).reduce((a,b)=>a+b,0);
+  document.getElementById('progress-fill').style.width = (done/40*100)+'%';
+  document.getElementById('progress-text').textContent = done+' / 40 questions validees';
+  document.getElementById('score-display').textContent = pts+' / 40';
+  if(done>=10) document.getElementById('m1').classList.add('done');
+  if(done>=20) document.getElementById('m2').classList.add('done');
+  if(done>=30) document.getElementById('m3').classList.add('done');
+  if(done>=39) document.getElementById('m4').classList.add('done');
+  if(done>=40) document.getElementById('m5').classList.add('done');
+}
+
+function setFB(id, ok, msgOk, msgNok) {
+  const fb = document.getElementById('fb'+id);
+  fb.className='feedback show '+(ok?'ok':'nok');
+  fb.innerHTML=(ok?'✅ ':'❌ ')+(ok?msgOk:msgNok);
+  scores['q'+id]=ok?1:0;
+  recordQTime(id);
+  updateProgress();
+  document.getElementById('qb'+id).querySelectorAll('input,textarea,select').forEach(el=>el.disabled=true);
+  document.getElementById('qb'+id).querySelectorAll('.validate-btn').forEach(b=>b.disabled=true);
+}
+function valRadio(id,correct,msgOk,msgNok){
+  const v=document.querySelector('input[name="q'+id+'"]:checked');
+  if(!v){alert('Selectionnez une reponse.');return;}
+  document.querySelectorAll('input[name="q'+id+'"]').forEach(inp=>{
+    if(inp.value===correct) inp.closest('.option-item').classList.add('correct');
+    else if(inp.value===v.value&&inp.value!==correct) inp.closest('.option-item').classList.add('incorrect');
+  });
+  setFB(id,v.value===correct,msgOk,msgNok);
+}
+function valCheckbox(id,correct,msgOk,msgNok){
+  const checked=Array.from(document.querySelectorAll('input[name="q'+id+'"]:checked')).map(c=>c.value);
+  const ok=checked.length===correct.length&&correct.every(c=>checked.includes(c));
+  document.querySelectorAll('input[name="q'+id+'"]').forEach(inp=>{
+    if(correct.includes(inp.value)) inp.closest('.option-item').classList.add('correct');
+    else if(checked.includes(inp.value)) inp.closest('.option-item').classList.add('incorrect');
+  });
+  setFB(id,ok,msgOk,msgNok);
+}
+function valNumber(id,min,max,msgOk,msgNok){
+  const el=document.getElementById('q'+id+'-ans');
+  const v=parseFloat(el.value);
+  if(isNaN(v)){alert('Entrez une valeur numerique.');return;}
+  const ok=v>=min&&v<=max;
+  el.classList.add(ok?'correct':'incorrect');
+  setFB(id,ok,msgOk,msgNok);
+}
+function valTexte(id,keywords,minFound,msgOk,msgNok){
+  const v=document.getElementById('q'+id+'-ans').value.toLowerCase();
+  const found=keywords.filter(k=>v.includes(k)).length;
+  const ok=found>=minFound&&v.length>50;
+  document.getElementById('q'+id+'-ans').classList.add(ok?'correct':'incorrect');
+  setFB(id,ok,msgOk,msgNok);
+}
+function valDouble(id,n1,v1,n2,v2,msgOk,msgNok){
+  const a=document.querySelector('input[name="'+n1+'"]:checked');
+  const b=document.querySelector('input[name="'+n2+'"]:checked');
+  if(!a||!b){alert('Repondez aux deux parties.');return;}
+  const ok1=a.value===v1,ok2=b.value===v2;
+  document.querySelectorAll('input[name="'+n1+'"]').forEach(inp=>{
+    if(inp.value===v1) inp.closest('.option-item').classList.add('correct');
+    else if(!ok1&&inp.value===a.value) inp.closest('.option-item').classList.add('incorrect');
+  });
+  document.querySelectorAll('input[name="'+n2+'"]').forEach(inp=>{
+    if(inp.value===v2) inp.closest('.option-item').classList.add('correct');
+    else if(!ok2&&inp.value===b.value) inp.closest('.option-item').classList.add('incorrect');
+  });
+  setFB(id,ok1&&ok2,msgOk,msgNok);
+}
+function valOrder7(){
+  const o={};document.querySelectorAll('.q7-order').forEach(inp=>{o[inp.dataset.action]=parseInt(inp.value);});
+  setFB(7,o['C']===1&&o['D']===2&&o['A']===3&&o['B']===4,
+    'Correct ! 1-Consulter stock, 2-Commander si rupture, 3-Acheminer aux postes, 4-Renseigner cahier.',
+    'Ordre: 1-Consulter stock, 2-Commander si rupture, 3-Acheminer aux postes, 4-Renseigner cahier.');
+}
+function valQ33(){
+  const inputs=document.querySelectorAll('.q33-in'); let ok=true;
+  inputs.forEach(inp=>{
+    const v=inp.value.trim().toUpperCase();
+    if(v!==inp.dataset.rep){ok=false;inp.classList.add('incorrect');}else inp.classList.add('correct');
+  });
+  setFB(33,ok,'Parfait ! Cafe O, Boites N, Dosettes N, Papier O.','Cafe 15>1=O; Boites 8<12=N; Dosettes 42<144=N; Papier 1=1=O.');
+}
+function valQ35(){
+  const ok=document.getElementById('q35-date').value.trim().length>0
+    &&document.getElementById('q35-cmd').value.trim().length>0
+    &&document.getElementById('q35-ref1').value.trim().length>2
+    &&document.getElementById('q35-qty1').value.trim().length>0
+    &&document.getElementById('q35-ref2').value.trim().length>2
+    &&document.getElementById('q35-qty2').value.trim().length>0
+    &&document.getElementById('q35-urgence').value!==''
+    &&document.getElementById('q35-motif').value.trim().length>5;
+  setFB(35,ok,'Fiche complete ! Articles manquants identifies avec urgence justifiee.',
+    'Remplissez tous les champs: date, n commande, 2 articles (ACCO0056+BOITE-EMBAL), quantites, urgence, motif.');
+}
+function valQ15(){
+  const v=document.querySelector('input[name="q15a"]:checked');
+  if(!v){alert('Selectionnez l alarme.');return;}
+  const proc=document.getElementById('q15-proc').value.toLowerCase();
+  const ok1=v.value==='d';
+  const ok2=proc.length>30&&(proc.includes('arr')||proc.includes('veri')||proc.includes('signal')||proc.includes('rebut')||proc.includes('maintenance'));
+  document.querySelectorAll('input[name="q15a"]').forEach(inp=>{
+    if(inp.value==='d') inp.closest('.option-item').classList.add('correct');
+    else if(!ok1&&inp.value===v.value) inp.closest('.option-item').classList.add('incorrect');
+  });
+  document.getElementById('q15-proc').classList.add(ok2?'correct':'incorrect');
+  setFB(15,ok1&&ok2,'Correct ! Defaut operculage - arret, verification, rebut, signalement maintenance.',
+    'Alarme: Defaut operculage. Arret machine, verification mecanisme, rebut dosettes, signalement maintenance.');
+}
+
+function getAns(n){
+  try{
+    // ===== Partie 1 (Q1-Q10) - Gestion stock =====
+    if(n===1){return 'Calcul: '+(document.getElementById('q1-calc').value||'-')+' => '+(document.getElementById('q1-ans').value||'-')+' jours';}
+    if(n===2){return 'Calcul: '+(document.getElementById('q2-calc').value||'-')+' => '+(document.getElementById('q2-ans').value||'-')+' dosettes';}
+    if(n===3){return Array.from(document.querySelectorAll('input[name="q3"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===4){const v=document.querySelector('input[name="q4"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+    if(n===5){return 'Calcul: '+(document.getElementById('q5-calc').value||'-')+' => '+(document.getElementById('q5-ans').value||'-')+' dosettes';}
+    if(n===6){return 'Calcul: '+(document.getElementById('q6-calc').value||'-')+' => '+(document.getElementById('q6-ans').value||'-')+' rotations';}
+    if(n===7){const o={};document.querySelectorAll('.q7-order').forEach(i=>{o[i.dataset.action]=i.value||'?';});return 'A='+o['A']+' B='+o['B']+' C='+o['C']+' D='+o['D'];}
+    if(n===8){return Array.from(document.querySelectorAll('input[name="q8"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===9){return document.getElementById('q9-ans').value||'-';}
+    if(n===10){return 'Calcul: '+(document.getElementById('q10-calc').value||'-')+' => '+(document.getElementById('q10-ans').value||'-')+' %';}
+    // ===== Partie 2 (Q11-Q20) - Indicateurs =====
+    if(n===11){return 'Calcul: '+(document.getElementById('q11-calc').value||'-')+' => '+(document.getElementById('q11-ans').value||'-')+' %';}
+    if(n===12){return 'Calcul: '+(document.getElementById('q12-calc').value||'-')+' => '+(document.getElementById('q12-ans').value||'-')+' %';}
+    if(n===13){return 'Calcul: '+(document.getElementById('q13-calc').value||'-')+' => '+(document.getElementById('q13-ans').value||'-')+' dos/h';}
+    if(n===14){return 'Calcul: '+(document.getElementById('q14-calc').value||'-')+' => '+(document.getElementById('q14-ans').value||'-')+' dosettes';}
+    if(n===15){const v=document.querySelector('input[name="q15a"]:checked');return (v?v.closest('.option-item').textContent.trim():'-')+' | Procedure: '+document.getElementById('q15-proc').value;}
+    if(n===16){const v=document.querySelector('input[name="q16"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+    if(n===17){return document.getElementById('q17-ans').value||'-';}
+    if(n===18){return Array.from(document.querySelectorAll('input[name="q18"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===19){return document.getElementById('q19-ans').value||'-';}
+    if(n===20){return document.getElementById('q20-ans').value||'-';}
+    // ===== Partie 3 (Q21-Q30) - Présentation machine =====
+    if(n===21){const v=document.querySelector('input[name="q21"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+    if(n===22){return Array.from(document.querySelectorAll('input[name="q22"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===23){const v=document.querySelector('input[name="q23"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+    if(n===24){const v=document.querySelector('input[name="q24"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+    if(n===25){return Array.from(document.querySelectorAll('input[name="q25"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===26){return Array.from(document.querySelectorAll('input[name="q26"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===27){return (document.getElementById('q27-ans').value||'-')+' dosettes';}
+    if(n===28){return 'Calcul: '+(document.getElementById('q28-calc').value||'-')+' => '+(document.getElementById('q28-ans').value||'-')+' h';}
+    if(n===29){const v1=document.querySelector('input[name="q29a"]:checked');const v2=document.querySelector('input[name="q29b"]:checked');return (v1?v1.closest('.option-item').textContent.trim():'-')+' | '+(v2?v2.closest('.option-item').textContent.trim():'-');}
+    if(n===30){const v=document.querySelector('input[name="q30"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+    // ===== Partie 4 (Q31-Q40) - Commandes clients =====
+    if(n===31){return (document.getElementById('q31-ans').value||'-')+' dosettes';}
+    if(n===32){return 'Calcul: '+(document.getElementById('q32-calc').value||'-')+' => '+(document.getElementById('q32-ans').value||'-')+' dosettes';}
+    if(n===33){return Array.from(document.querySelectorAll('.q33-in')).map(i=>i.value||'?').join(' / ');}
+    if(n===34){return 'Calcul: '+(document.getElementById('q34-calc').value||'-')+' => '+(document.getElementById('q34-ans').value||'-')+' h';}
+    if(n===35){return 'Date:'+document.getElementById('q35-date').value+' Cmd:'+document.getElementById('q35-cmd').value+' Art1:'+document.getElementById('q35-ref1').value+'('+document.getElementById('q35-qty1').value+') Art2:'+document.getElementById('q35-ref2').value+'('+document.getElementById('q35-qty2').value+') Urgence:'+document.getElementById('q35-urgence').value;}
+    if(n===36){return 'Calcul: '+(document.getElementById('q36-calc').value||'-')+' => '+(document.getElementById('q36-ans').value||'-')+' EUR TTC';}
+    if(n===37){return 'Calcul: '+(document.getElementById('q37-calc').value||'-')+' => '+(document.getElementById('q37-ans').value||'-')+' dosettes';}
+    if(n===38){return 'Calcul: '+(document.getElementById('q38-calc').value||'-')+' => '+(document.getElementById('q38-ans').value||'-')+' dosettes';}
+    if(n===39){return Array.from(document.querySelectorAll('input[name="q39"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===40){const v=document.querySelector('input[name="q40"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+  }catch(e){return '-';}return '-';
+}
+
+// ============================================================
+// GENERATEUR PDF PUR JS (sans bibliothèque externe)
+// ============================================================
+function genPDF(nom, prenom, classe, pts, dateStr, stats) {
+  const W=595, H=842, ML=40, MR=40, MT=40;
+  let pages=[]; 
+  let curPage=null;
+  let y=0;
+
+  function newPage(){
+    curPage={parts:[]};
+    pages.push(curPage);
+    y=H-MT;
+  }
+  function checkY(needed){if(!curPage||y<40+needed)newPage();}
+
+  function safe(s){
+    return String(s||'')
+      .replace(/[éèêëÉÈÊË]/g,'e').replace(/[àâäÀÂÄ]/g,'a')
+      .replace(/[ùûüÙÛÜ]/g,'u').replace(/[îïÎÏ]/g,'i')
+      .replace(/[ôöÔÖ]/g,'o').replace(/[çÇ]/g,'c')
+      .replace(/[ñÑ]/g,'n').replace(/[°]/g,' ')
+      .replace(/[–—]/g,'-').replace(/[""\u00ab\u00bb]/g,'"')
+      .replace(/['']/g,"'").replace(/\u2026/g,'...')
+      .replace(/\u2705|\u2714|\[OK\]|\[ok\]/g,'[OK]')
+      .replace(/\u274c|\u2716|\[X\]|\[x\]/g,'[X]')
+      .replace(/\u26a0|\ufe0f|\[!\]/g,'[!]')
+      .replace(/[^\x20-\x7E]/g,'?')
+      .replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
+  }
+
+  function txt(s,x,yy,sz,bold,r,g,b){
+    r=r===undefined?0:r;g=g===undefined?0:g;b=b===undefined?0:b;
+    const fn=bold?'/F2':'/F1';
+    curPage.parts.push(`BT ${fn} ${sz} Tf ${r} ${g} ${b} rg ${x} ${yy} Td (${safe(s)}) Tj ET`);
+  }
+  function filledRect(x,yy,w,h,r,g,b){
+    curPage.parts.push(`${r} ${g} ${b} rg ${x} ${yy} ${w} ${h} re f 0 0 0 rg`);
+  }
+  function hLine(x1,yy,x2,lw,r,g,b){
+    r=r||0.7;g=g||0.7;b=b||0.7;lw=lw||0.5;
+    curPage.parts.push(`${r} ${g} ${b} RG ${lw} w ${x1} ${yy} m ${x2} ${yy} l S 0 0 0 RG`);
+  }
+
+  const CW = W-ML-MR; // content width
+
+  function wrapLines(s, maxChars){
+    const words=String(s||'').split(' ');
+    const lines=[]; let cur='';
+    for(const w of words){
+      if(((cur?cur+' ':'')+w).length<=maxChars){cur=(cur?cur+' ':'')+w;}
+      else{if(cur)lines.push(cur);cur=w;}
+    }
+    if(cur)lines.push(cur);
+    return lines.length?lines:[''];
+  }
+
+  function addTxt(s, sz, bold, r, g, b, indent){
+    sz=sz||10;indent=indent||0;
+    const maxChars=Math.floor((CW-indent)/(sz*0.52));
+    const lines=wrapLines(s,maxChars);
+    for(const l of lines){
+      checkY(sz+5);
+      txt(l,ML+indent,y,sz,bold||false,r||0,g||0,b||0);
+      y-=(sz+4);
+    }
+  }
+  function addSp(h){y-=(h||8);}
+  function addHLine(){checkY(8);hLine(ML,y,W-MR);y-=8;}
+
+  function addHeader2(s,r,g,b,fr,fg,fb){
+    checkY(20);
+    const h=16;
+    filledRect(ML,y-2,CW,h,r,g,b);
+    txt(s,ML+5,y+1,10,true,fr||1,fg||1,fb||1);
+    y-=(h+4);
+  }
+
+  function addTableRow(cells,widths,isHdr,isEven){
+    const rh=13;checkY(rh+2);
+    const rowY=y-2;
+    if(isHdr)filledRect(ML,rowY,CW,rh,0.17,0.37,0.59);
+    else if(isEven)filledRect(ML,rowY,CW,rh,0.94,0.96,0.97);
+    let x=ML;
+    cells.forEach((c,i)=>{
+      const s=String(c||'').substring(0,widths[i]>100?60:20);
+      txt(s,x+2,y,8,isHdr,isHdr?1:0,isHdr?1:0,isHdr?1:0);
+      x+=widths[i];
+    });
+    y-=rh;
+  }
+
+  // ---- Construire le document ----
+  newPage();
+
+  // En-tête bleu
+  const headerH = 28;
+  filledRect(ML, y-4, CW, headerH, 0.17, 0.37, 0.59);
+  txt('TP - Gestion de Commande et de Stock - Machine EcolCafe', ML+6, y+10, 10, true, 1,1,1);
+  txt(nom.toUpperCase()+' '+prenom+' | Classe: '+classe+' | Date: '+dateStr, ML+6, y-1, 9, false, 0.85,0.95,1);
+  y -= (headerH+8);
+
+  // Note
+  checkY(30);
+  filledRect(ML, y-4, CW, 26, 0.93,0.97,0.93);
+  // Évaluation Pronote dans le PDF
+  const filiere2 = getFiliere(classe);
+  const ret2 = COMP_RETENUES[filiere2];
+  const cs2 = calcCompScores(filiere2);
+  const totalPts = ret2.reduce((s,c)=>{ const t=cs2.cT[c]||0; const ok=t>0?cs2.cS[c]:0; const pct=t>0?ok/t:0; return s+getPronoteNiveau(pct).pts; },0);
+  const maxPts = ret2.length * 6;
+  txt('EVALUATION PAR COMPETENCES PRONOTE | Filiere: '+filiere2+' | '+ret2.join(', ')+' | Total: '+totalPts+'/'+maxPts+' pts', ML+6, y+6, 8, true, 0.15,0.33,0.07);
+  const mention = ''; // supprimé - éval Pronote
+  // mention numérique supprimée
+  y -= 36; addSp(4);
+
+  // Compétences
+  const cS={},cT={};
+  Object.keys(scores).forEach(qid=>{const c=qComp[qid];if(!cS[c]){cS[c]=0;cT[c]=0;}cS[c]+=scores[qid];cT[c]++;});
+  addHeader2('EVALUATION PAR COMPETENCES - CODE PRONOTE', 0.15,0.33,0.07);
+  const filiere3=getFiliere(classe);
+  const ret3=COMP_RETENUES[filiere3];
+  const cs3=calcCompScores(filiere3);
+  addTxt('Filiere : '+FILIERE_LABEL[filiere3], 9, true, 0.1,0.23,0.42);
+  addSp(3);
+  addTableRow(['Code','Competence evaluee','Score','Niveau Pronote','Points'],[35,155,45,100,CW-335],true);
+  let ev3=false;
+  ret3.forEach(c=>{
+    const t3=cs3.cT[c]||0; const ok3=t3>0?cs3.cS[c]:0;
+    const pct3=t3>0?ok3/t3:0; const niv3=getPronoteNiveau(pct3);
+    addTableRow([c, getCompLib(c,filiere3).substring(0,38), (t3>0?ok3+'/'+t3:'N/A'), niv3.label, niv3.pts+' pt'+(niv3.pts>1?'s':'')],[35,155,45,100,CW-335],false,ev3);
+    ev3=!ev3;
+  });
+  addSp(8); addHLine(); addSp(4);
+
+  // Détail questions
+  addHeader2('DETAIL DES REPONSES - PARTIE 1 : GESTION DU STOCK (Q1-Q10)', 0.18,0.48,0.27);
+  const wQ=[22,100,50,55,CW-227];
+  addTableRow(['N','Question','Comp.','Resultat','Reponse donnee'],wQ,true);
+  for(let i=1;i<=10;i++){
+    const ok=scores['q'+i];
+    const res=ok===undefined?'- N/R':(ok===1?'[OK] Juste':'[X] Faux');
+    addTableRow([i,qTitres[i],qComp['q'+i]||'-',res,getAns(i).substring(0,55)],wQ,false,i%2===0);
+  }
+  addSp(6);
+  addHeader2('DETAIL DES REPONSES - PARTIE 2 : INDICATEURS (Q11-Q20)', 0.18,0.48,0.27);
+  addTableRow(['N','Question','Comp.','Resultat','Reponse donnee'],wQ,true);
+  for(let i=11;i<=20;i++){
+    const ok=scores['q'+i];
+    const res=ok===undefined?'- N/R':(ok===1?'[OK] Juste':'[X] Faux');
+    addTableRow([i,qTitres[i],qComp['q'+i]||'-',res,getAns(i).substring(0,55)],wQ,false,i%2===0);
+  }
+  addSp(6);
+  addHeader2('DETAIL DES REPONSES - PARTIE 3 : MACHINE & FLUX (Q21-Q30)', 0.18,0.48,0.27);
+  addTableRow(['N','Question','Comp.','Resultat','Reponse donnee'],wQ,true);
+  for(let i=21;i<=30;i++){
+    const ok=scores['q'+i];
+    const res=ok===undefined?'- N/R':(ok===1?'[OK] Juste':'[X] Faux');
+    addTableRow([i,qTitres[i],qComp['q'+i]||'-',res,getAns(i).substring(0,55)],wQ,false,i%2===0);
+  }
+  addSp(6);
+  addHeader2('DETAIL DES REPONSES - PARTIE 4 : COMMANDES CLIENTS (Q31-Q40)', 0.18,0.48,0.27);
+  addTableRow(['N','Question','Comp.','Resultat','Reponse donnee'],wQ,true);
+  for(let i=31;i<=40;i++){
+    const ok=scores['q'+i];
+    const res=ok===undefined?'- N/R':(ok===1?'[OK] Juste':'[X] Faux');
+    addTableRow([i,qTitres[i],qComp['q'+i]||'-',res,getAns(i).substring(0,55)],wQ,false,i%2===0);
+  }
+  addSp(8); addHLine(); addSp(4);
+
+  // Corrections
+  addHeader2('REPONSES ATTENDUES (CORRECTION)', 0.17,0.37,0.59);
+  for(let i=1;i<=40;i++){
+    checkY(14);
+    const ok=scores['q'+i];
+    const okTxt=ok===undefined?'[N/R]':(ok===1?'[OK]':'[X] ');
+    addTxt('Q'+i+' '+okTxt+' '+qTitres[i], 9, true, 0.17,0.37,0.59, 0);
+    addTxt('Attendu: '+corrections[i], 8, false, 0.2,0.5,0.2, 8);
+    const rep=getAns(i);
+    if(rep&&rep!=='-')addTxt('Repondu: '+rep.substring(0,120), 8, false, 0.3,0.3,0.3, 8);
+    addSp(3);
+  }
+
+  // ---- Section tracking comportemental ----
+  if (stats) {
+    addHeader2('INDICATEURS DE COMPORTEMENT DURANT LE TP', 0.17,0.37,0.59);
+
+    // Ligne 1 : temps
+    const totalStr  = fmtDuration(stats.totalMs);
+    const keyStr    = fmtDuration(stats.keyMs);
+    const inactStr  = fmtDuration(stats.inactMs);
+    const chronoSec = stats.tempsPasseElapsed;
+    const hh = Math.floor(chronoSec/3600);
+    const mm = Math.floor((chronoSec%3600)/60);
+    const ss = chronoSec%60;
+    const chronoStr = hh+'h '+String(mm).padStart(2,'0')+'min '+String(ss).padStart(2,'0')+'s';
+
+    addTxt('Temps total passe sur le TP : '+totalStr+'  |  Temps chronometre ecoule : '+chronoStr, 9, true, 0,0,0, 0);
+    addTxt('Temps actif au clavier : '+keyStr+'  |  Temps d inactivite detecte (>30s sans action) : '+inactStr, 9, false, 0.3,0.3,0.3, 0);
+    addSp(4);
+
+    // Frappe clavier
+    addTxt('Nombre de frappes clavier enregistrees : '+stats.keyCount, 9, false, 0,0,0, 0);
+    addSp(2);
+
+    // Copier-coller
+    if (stats.pasteCount === 0) {
+      addTxt('Copier-coller : aucun coller detecte durant le TP', 9, false, 0.18,0.48,0.27, 0);
+    } else {
+      addTxt('Copier-coller detecte : '+stats.pasteCount+' occurrence(s)', 9, true, 0.7,0.1,0.1, 0);
+      stats.pasteDetails.forEach(p => {
+        addTxt('  - Coller dans '+p.zone+' a '+p.heure, 8, false, 0.5,0.1,0.1, 8);
+      });
+    }
+    addSp(6);
+
+    // Horodatage par question
+    addHeader2('HORODATAGE DES VALIDATIONS PAR QUESTION', 0.18,0.48,0.27);
+    const wT=[22,85,65,65,CW-237];
+    addTableRow(['N','Question','Heure valid.','Tps ecoule','Observations'],wT,true);
+    let rowEven=false;
+    for(let i=1;i<=40;i++){
+      const qt=qTimestamps['q'+i];
+      let heureStr='-', dureeStr='-', obs='';
+      if(qt && qt.validated){
+        const d=new Date(qt.validated);
+        heureStr=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
+        dureeStr=fmtDuration(qt.seconds*1000);
+        if(qt.seconds < 8) obs='[!] Tres rapide';
+        else if(qt.seconds > 600) obs='Long (>10min)';
+      } else {
+        obs='Non repondu';
+      }
+      addTableRow([i, qTitres[i].substring(0,30), heureStr, dureeStr, obs], wT, false, rowEven);
+      rowEven=!rowEven;
+    }
+    addSp(8);
+  }
+
+  // Pied de page sur chaque page
+  pages.forEach((p,pi)=>{
+    p.parts.push(`0.6 0.6 0.6 rg`);
+    p.parts.push(`BT /F1 7 Tf 0.5 0.5 0.5 rg ${ML} 22 Td (TP EcolCafe - Lycee Vaucanson - ${dateStr} - Page ${pi+1}/${pages.length}) Tj ET`);
+    p.parts.push(`0 0 0 rg`);
+  });
+
+  // ---- Assemblage PDF ----
+  let pdf='%PDF-1.4\n%\xff\xff\xff\xff\n';
+  const rebuiltOffsets={};
+
+  function addObj(content){
+    const idx=Object.keys(rebuiltOffsets).length+1;
+    rebuiltOffsets[idx]=pdf.length;
+    pdf+=`${idx} 0 obj\n${content}\nendobj\n`;
+    return idx;
+  }
+
+  const f1=addObj('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+  const f2=addObj('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+  const fd=`<< /F1 ${f1} 0 R /F2 ${f2} 0 R >>`;
+
+  const pageRefs=[];
+  for(const p of pages){
+    const stream=p.parts.join('\n');
+    const cIdx=addObj(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+    const pIdx=addObj(`<< /Type /Page /Parent __PAGES__ /MediaBox [0 0 ${W} ${H}] /Contents ${cIdx} 0 R /Resources << /Font ${fd} >> >>`);
+    pageRefs.push(pIdx);
+  }
+
+  const pagesIdx=addObj(`<< /Type /Pages /Kids [${pageRefs.map(r=>r+' 0 R').join(' ')}] /Count ${pages.length} >>`);
+  const catIdx=addObj(`<< /Type /Catalog /Pages ${pagesIdx} 0 R >>`);
+
+  // Corriger les références __PAGES__
+  pdf=pdf.split('__PAGES__').join(`${pagesIdx} 0 R`);
+
+  // Recalculer les offsets après remplacement
+  const finalOffsets={};
+  let pos=0;
+  for(const line of pdf.split('\n')){
+    const m=line.match(/^(\d+) 0 obj$/);
+    if(m)finalOffsets[parseInt(m[1])]=pos;
+    pos+=line.length+1;
+  }
+
+  const xrefPos=pdf.length;
+  const numObjs=Object.keys(finalOffsets).length+1;
+  let xref=`xref\n0 ${numObjs}\n`;
+  xref+='0000000000 65535 f \n';
+  for(let i=1;i<numObjs;i++){
+    xref+=String(finalOffsets[i]||0).padStart(10,'0')+' 00000 n \n';
+  }
+  xref+=`trailer\n<< /Size ${numObjs} /Root ${catIdx} 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;
+  pdf+=xref;
+  return pdf;
+}
+
+// showFinal remplacée par version Pronote (voir bas du fichier)
+
+// ====== TELECHARGER PDF ======
+function telechargerPDF(){
+  const nom=document.getElementById('eleve-nom').value.trim()||'Eleve';
+  const prenom=document.getElementById('eleve-prenom').value.trim()||'';
+  const classe=document.getElementById('eleve-classe').value||'Classe';
+  const pts=Object.values(scores).reduce((a,b)=>a+b,0);
+  const dateStr=new Date().toLocaleDateString('fr-FR');
+
+  if(!document.getElementById('final-section')||document.getElementById('final-section').style.display==='none'){
+    if(!validerIdentite()) return;
+    showFinal();
+  }
+
+  const stats=getTrackingStats();
+  const pdfStr=genPDF(nom,prenom,classe,pts,dateStr,stats);
+
+  // Convertir en binaire
+  const bytes=new Uint8Array(pdfStr.length);
+  for(let i=0;i<pdfStr.length;i++) bytes[i]=pdfStr.charCodeAt(i)&0xff;
+  const blob=new Blob([bytes],{type:'application/pdf'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='TP_EcolCafe_'+classe+'_'+nom+'_'+prenom+'_'+pts+'sur40.pdf';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
+}
+
+// ====== OUVRIR DEPOT ======
+function ouvrirDepot(){
+  const classeTokens={
+    '2PMIA1':'SFkasij3W8ZdY6X','2PMIA2':'KWTiQL5cLkQnRkw','2PMIA3':'Exk55DptbrJHmL8',
+    '2PMIA4':'NyFcyoajmiDHWBN','2PMIA5':'wbF4sqQkLCCr5Nj','1PLP':'Q2LF28DBwcDbaZ3',
+    'TPLP':'rq7TaGNDJc7MxZn','1CIP G1':'ZDYKjyNzsF4LNNC','1CIP G2':'KQp5LCtEKJsGXRT',
+    '2CIP G1':'kybKoENkrz9qKEo','2CIP G2':'5XdDxzyAJDFSgF4'
+  };
+  const classe=document.getElementById('eleve-classe').value;
+  if(!classe){alert('Selectionnez votre classe en haut du TP.');return;}
+  const token=classeTokens[classe];
+  if(!token){alert('Classe non reconnue.');return;}
+  const url='https://nuage01.apps.education.fr/index.php/s/'+token;
+  const st=document.getElementById('send-status');
+  st.innerHTML='✅ Dossier de la classe <strong>'+classe+'</strong> ouvert dans un nouvel onglet.<br>'
+    +'<span style="font-size:.84rem;">Deposez-y votre fichier PDF.</span><br>'
+    +'<a href="'+url+'" target="_blank" style="color:#2b5f96;font-size:.82rem;">Cliquer ici si le dossier ne s\'est pas ouvert</a>';
+  st.className='success';
+  window.open(url,'_blank');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SYSTÈME ÉVALUATION PRONOTE - CODE COULEUR OFFICIEL
+// ══════════════════════════════════════════════════════════════════════════════
+
+const PRONOTE_NIVEAUX = [
+  {hex:'#275317', label:'Très bonne maîtrise',    pts:6, seuil:0.85, textColor:'#fff'},
+  {hex:'#4EA72E', label:'Maîtrise satisfaisante', pts:5, seuil:0.70, textColor:'#fff'},
+  {hex:'#92D050', label:'Presque maîtrisé',       pts:4, seuil:0.50, textColor:'#333'},
+  {hex:'#FFFF00', label:'Maîtrise fragile',        pts:3, seuil:0.35, textColor:'#333'},
+  {hex:'#FFC000', label:'Début de maîtrise',      pts:2, seuil:0.15, textColor:'#333'},
+  {hex:'#EE0000', label:'Maîtrise insuffisante',  pts:1, seuil:0.00, textColor:'#fff'},
+];
+
+// Compétences par filière (référentiel officiel)
+const COMP_CIP = {
+  CP01:"Communiquer en situation professionnelle et utiliser l'outil adapté pour rendre compte",
+  CP02:"S'informer et informer au cours de l'activité professionnelle",
+  CP03:"Préparer le travail au poste",
+  CP04:"Conduire l'installation à partir du poste de travail",
+  CP05:"Recueillir des données liées au produit et à la production",
+  CP06:"Identifier des risques au poste de travail",
+  CP07:"Appliquer des modes opératoires conformes aux objectifs de qualité et sécurité",
+};
+const COMP_PMIA = {
+  'CP1.1':"Décoder l'organisation de l'installation (structurelle, fonctionnelle, temporelle)",
+  'CP2.1':"Approvisionner et préparer les installations, matériels, produits et accessoires",
+  'CP2.2':"Préparer les documents nécessaires à la maintenance, organiser son intervention",
+  'CP2.3':"Identifier les risques pour les biens et les personnes",
+  'CP2.4':"Mettre en oeuvre les mesures de prévention associées aux risques identifiés",
+  'CP3.1':"Piloter une installation ou des modules en mode normal (démarrage)",
+  'CP3.2':"Piloter une installation ou des modules en mode normal (conduite)",
+  'CP3.3':"Assurer le suivi de la production (analyse des indicateurs, paramètres...)",
+  'CP4.1':"Réaliser des interventions de maintenance de niveau 1 (inspection, surveillance)",
+  'CP4.2':"Réaliser des interventions de maintenance de niveau 2 (dépose, repose pièces d'usure)",
+  'CP5.1':"Adopter une démarche éco-responsable",
+  'CP6.1':"Communiquer à l'écrit et/ou à l'oral dans son environnement professionnel",
+  'CP6.2':"Utiliser les outils numériques et informatiques",
+};
+const COMP_PLP = {
+  CP01:"Communiquer et rendre compte avec l'outil de communication adapté",
+  CP02:"S'informer et analyser la situation, informer au cours de l'activité professionnelle",
+  CP03:"Préparer le travail d'organisation et de réalisation du pilotage",
+  CP04:"Piloter une ligne ou un système de production",
+  CP05:"Assurer le suivi de production lié à l'analyse des indicateurs, paramètres et spécifications",
+  CP06:"Choisir et combiner des modes opératoires pour faire face aux situations",
+  CP07:"Gérer les compétences techniques des personnels affectés sur la ligne",
+  CP08:"Proposer des améliorations et des pistes de résolution de problèmes",
+  CP09:"Identifier des risques pour la production, les biens, l'environnement et la sécurité",
+  CP10:"Appliquer les mesures de prévention de tous les risques identifiés",
+};
+
+// Mapping : qComp du TP (logique interne) → code référentiel réel par filière
+// Réordonnement : Q1-10 = stock; Q11-20 = indicateurs; Q21-30 = machine; Q31-40 = commandes
+const QCOMP_TO_CIP = {
+  // Partie 1 - Gestion stock (CP04 conduite + CP03 préparation)
+  q1:'CP04',q2:'CP03',q3:'CP04',q4:'CP04',q5:'CP03',
+  q6:'CP04',q7:'CP04',q8:'CP03',q9:'CP04',q10:'CP04',
+  // Partie 2 - Indicateurs (CP05 données + CP01 communication)
+  q11:'CP05',q12:'CP05',q13:'CP05',q14:'CP05',q15:'CP05',
+  q16:'CP05',q17:'CP05',q18:'CP05',q19:'CP01',q20:'CP01',
+  // Partie 3 - Machine (CP02 s'informer + CP03 préparer)
+  q21:'CP02',q22:'CP02',q23:'CP02',q24:'CP02',q25:'CP02',
+  q26:'CP03',q27:'CP03',q28:'CP03',q29:'CP02',q30:'CP02',
+  // Partie 4 - Commandes (CP04 conduire + CP01 communiquer + CP03 préparer)
+  q31:'CP04',q32:'CP04',q33:'CP03',q34:'CP04',q35:'CP01',
+  q36:'CP03',q37:'CP04',q38:'CP04',q39:'CP01',q40:'CP01'
+};
+const QCOMP_TO_PMIA = {
+  // Partie 1
+  q1:'CP3.3',q2:'CP2.1',q3:'CP3.3',q4:'CP3.3',q5:'CP2.1',
+  q6:'CP3.3',q7:'CP3.3',q8:'CP2.1',q9:'CP3.3',q10:'CP3.3',
+  // Partie 2
+  q11:'CP3.3',q12:'CP3.3',q13:'CP3.3',q14:'CP3.3',q15:'CP3.3',
+  q16:'CP3.3',q17:'CP5.1',q18:'CP3.3',q19:'CP6.1',q20:'CP6.1',
+  // Partie 3
+  q21:'CP1.1',q22:'CP1.1',q23:'CP1.1',q24:'CP1.1',q25:'CP1.1',
+  q26:'CP2.1',q27:'CP1.1',q28:'CP1.1',q29:'CP1.1',q30:'CP1.1',
+  // Partie 4
+  q31:'CP3.1',q32:'CP3.1',q33:'CP2.1',q34:'CP3.1',q35:'CP6.1',
+  q36:'CP2.1',q37:'CP3.1',q38:'CP3.1',q39:'CP6.1',q40:'CP6.1'
+};
+const QCOMP_TO_PLP = {
+  // Partie 1 (gestion stock)
+  q1:'CP05',q2:'CP03',q3:'CP05',q4:'CP05',q5:'CP03',
+  q6:'CP05',q7:'CP05',q8:'CP03',q9:'CP05',q10:'CP05',
+  // Partie 2 (indicateurs)
+  q11:'CP05',q12:'CP05',q13:'CP05',q14:'CP08',q15:'CP05',
+  q16:'CP08',q17:'CP08',q18:'CP08',q19:'CP01',q20:'CP01',
+  // Partie 3 (machine)
+  q21:'CP02',q22:'CP02',q23:'CP02',q24:'CP02',q25:'CP02',
+  q26:'CP03',q27:'CP03',q28:'CP03',q29:'CP02',q30:'CP02',
+  // Partie 4 (commandes)
+  q31:'CP04',q32:'CP04',q33:'CP03',q34:'CP04',q35:'CP01',
+  q36:'CP03',q37:'CP04',q38:'CP04',q39:'CP01',q40:'CP01'
+};
+
+// Compétences retenues pour ce TP (max 3 par filière)
+const COMP_RETENUES = {
+  CIP:  ['CP02','CP03','CP04'],
+  PMIA: ['CP1.1','CP2.1','CP3.3'],
+  PLP:  ['CP02','CP03','CP05'],
+};
+
+const FILIERE_LABEL = {
+  CIP:  'CAP CIP – Conduite d\'Installation de Production',
+  PMIA: 'BAC PRO PMIA – Maintenance des Systèmes de Production',
+  PLP:  'BAC PRO PLP – Pilotage de Ligne de Production',
+};
+
+function getFiliere(classe) {
+  if(['2CIP G1','2CIP G2','1CIP G1','1CIP G2'].includes(classe)) return 'CIP';
+  if(['2PMIA1','2PMIA2','2PMIA3','2PMIA4','2PMIA5'].includes(classe)) return 'PMIA';
+  if(['1PLP','TPLP'].includes(classe)) return 'PLP';
+  return 'PLP';
+}
+
+function getCompLib(code, filiere) {
+  if(filiere==='CIP')  return COMP_CIP[code]  || code;
+  if(filiere==='PMIA') return COMP_PMIA[code] || code;
+  return COMP_PLP[code] || code;
+}
+
+function getQCompMap(filiere) {
+  if(filiere==='CIP')  return QCOMP_TO_CIP;
+  if(filiere==='PMIA') return QCOMP_TO_PMIA;
+  return QCOMP_TO_PLP;
+}
+
+function getPronoteNiveau(pct) {
+  for(const n of PRONOTE_NIVEAUX) {
+    if(pct >= n.seuil) return n;
+  }
+  return PRONOTE_NIVEAUX[PRONOTE_NIVEAUX.length-1];
+}
+
+function calcCompScores(filiere) {
+  const map  = getQCompMap(filiere);
+  const ret  = COMP_RETENUES[filiere];
+  const cS   = {}, cT = {};
+  ret.forEach(c => { cS[c]=0; cT[c]=0; });
+  Object.keys(scores).forEach(qid => {
+    const code = map[qid];
+    if(code && ret.includes(code)) {
+      cS[code] += scores[qid];
+      cT[code]++;
+    }
+  });
+  return {cS, cT};
+}
+
+function buildPronoteHTML(classe) {
+  const filiere  = getFiliere(classe);
+  const ret      = COMP_RETENUES[filiere];
+  const {cS, cT} = calcCompScores(filiere);
+
+  let html = `<div class="eval-intro-box">`;
+  html += `<strong>📋 Filière :</strong> ${FILIERE_LABEL[filiere]}<br>`;
+  html += `<strong>🎯 Compétences évaluées :</strong> ${ret.join(' · ')}`;
+  html += `</div>`;
+
+  ret.forEach(code => {
+    const total = cT[code] || 0;
+    const ok    = total > 0 ? cS[code] : 0;
+    const pct   = total > 0 ? ok / total : 0;
+    const niv   = getPronoteNiveau(pct);
+    const lib   = getCompLib(code, filiere);
+    const scoreStr = total > 0 ? `${ok}/${total} questions` : 'Non évaluée';
+
+    html += `<div class="pronote-row" style="background:${niv.hex}22;border-color:${niv.hex};">`;
+    html += `<div class="pronote-dot" style="background:${niv.hex};"></div>`;
+    html += `<div class="pronote-info">`;
+    html += `<div class="pronote-comp-code">${code}</div>`;
+    html += `<div class="pronote-comp-lib">${lib}</div>`;
+    html += `<div class="pronote-score">${scoreStr}</div>`;
+    html += `</div>`;
+    html += `<div class="pronote-right">`;
+    html += `<div class="pronote-niveau" style="color:${niv.hex==='#FFFF00'||niv.hex==='#92D050'||niv.hex==='#FFC000'?'#555':niv.hex};">${niv.label}</div>`;
+    html += `<div class="pronote-pts">${niv.pts} point${niv.pts>1?'s':''} Pronote</div>`;
+    html += `</div>`;
+    html += `</div>`;
+  });
+
+  // Légende Pronote complète
+  html += `<div class="pronote-legende">`;
+  html += `<div class="pronote-legende-title">Échelle Pronote complète</div>`;
+  html += `<div class="pronote-legende-grid">`;
+  PRONOTE_NIVEAUX.forEach(n => {
+    html += `<div class="pronote-leg-item">`;
+    html += `<div class="pronote-leg-dot" style="background:${n.hex};border:1px solid rgba(0,0,0,.15);"></div>`;
+    html += `<span>${n.label} (${n.pts} pt${n.pts>1?'s':''})</span>`;
+    html += `</div>`;
+  });
+  html += `</div></div>`;
+
+  return html;
+}
+
+// ── Validation identité ───────────────────────────────────────────────────────
+function validerIdentite() {
+  const nom    = document.getElementById('eleve-nom').value.trim();
+  const prenom = document.getElementById('eleve-prenom').value.trim();
+  const classe = document.getElementById('eleve-classe').value;
+  let ok = true;
+
+  [['eleve-nom','hint-nom',!nom],['eleve-prenom','hint-prenom',!prenom],['eleve-classe','hint-classe',!classe]].forEach(([fid,hid,err]) => {
+    const el = document.getElementById(fid);
+    const hd = document.getElementById(hid);
+    if(!el||!hd) return;
+    if(err){ el.classList.add('field-error'); hd.classList.add('show'); ok=false; }
+    else   { el.classList.remove('field-error'); hd.classList.remove('show'); }
+  });
+  if(!ok) document.querySelector('.eleve-box').scrollIntoView({behavior:'smooth'});
+  return ok;
+}
+
+// ── Surcharge showFinal ───────────────────────────────────────────────────────
+function showFinal() {
+  if(!validerIdentite()) return;
+  const classe = document.getElementById('eleve-classe').value;
+  document.getElementById('comp-eval-container').innerHTML = buildPronoteHTML(classe);
+  document.getElementById('final-section').style.display = 'block';
+  document.getElementById('final-section').scrollIntoView({behavior:'smooth'});
+}
+
+</script>
+</body>
+</html>

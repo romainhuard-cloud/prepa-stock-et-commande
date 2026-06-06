@@ -1,0 +1,2120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TP – Gestion de Commande &amp; de Stock | Lycée Vaucanson</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --vert:#4a9c5d;--vert-clair:#d4edda;--vert-fonce:#2d7a45;
+  --bleu:#4a87c0;--bleu-clair:#d0e6f7;--bleu-fonce:#2b5f96;
+  --gris:#8a9bac;--gris-clair:#e8ecf0;--gris-tres-clair:#f4f6f8;
+  --blanc:#ffffff;--rouge:#e05252;--rouge-clair:#fde8e8;
+  --texte:#2c3e50;--radius:10px;--shadow:0 4px 16px rgba(44,62,80,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Barlow',sans-serif;background:var(--gris-tres-clair);color:var(--texte);min-height:100vh;}
+
+/* HEADER */
+header{
+  background:
+    linear-gradient(135deg,rgba(43,95,150,0.65) 0%,rgba(45,122,69,0.62) 100%),
+    url("https://www.monolabsrl.com/images/prodotti/CM30-case-packer.jpg") center 30%/cover no-repeat;
+  color:#fff;padding:16px 28px;display:flex;align-items:center;gap:20px;
+  box-shadow:0 4px 22px rgba(0,0,0,.28);position:sticky;top:0;z-index:1000;
+}
+header img.logo{height:68px;border-radius:8px;background:#fff;padding:4px;box-shadow:0 2px 10px rgba(0,0,0,.3);}
+.header-text h1{font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;line-height:1.2;}
+.header-text p{font-size:.82rem;opacity:.85;margin-top:2px;}
+.header-right{margin-left:auto;display:flex;gap:10px;align-items:flex-start;}
+.header-machine{flex:1;display:flex;align-items:center;justify-content:center;}
+.header-machine span{font-family:'Barlow Condensed',sans-serif;font-size:2.2rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,0.4),0 0 30px rgba(255,255,255,0.15);opacity:0.95;}
+.hbox{background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 14px;text-align:center;}
+.hbox-label{font-size:.68rem;opacity:.8;text-transform:uppercase;letter-spacing:1px;}
+#timer{font-family:'Barlow Condensed',monospace;font-size:1.75rem;font-weight:700;letter-spacing:2px;}
+#timer.urgent{color:#ffcc00;animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+#score-display{font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;}
+
+/* PROGRESS */
+.progress-section{background:#fff;padding:13px 28px;border-bottom:2px solid var(--gris-clair);box-shadow:0 2px 8px rgba(0,0,0,.08);position:sticky;top:101px;z-index:999;}
+.progress-header{display:flex;justify-content:space-between;margin-bottom:7px;font-size:.8rem;color:var(--gris);font-weight:600;}
+.progress-bar-track{background:var(--gris-clair);border-radius:20px;height:13px;overflow:hidden;}
+.progress-bar-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--bleu),var(--vert));transition:width .5s cubic-bezier(.4,0,.2,1);width:0%;}
+.progress-milestones{display:flex;justify-content:space-between;margin-top:7px;}
+.milestone{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.68rem;color:var(--gris);font-weight:600;transition:color .3s;}
+.milestone-dot{width:11px;height:11px;border-radius:50%;background:var(--gris-clair);border:2px solid var(--gris);transition:all .3s;}
+.milestone.done .milestone-dot{background:var(--vert);border-color:var(--vert-fonce);}
+.milestone.done{color:var(--vert-fonce);}
+
+/* CONTAINER */
+.container{max-width:900px;margin:0 auto;padding:28px 18px 60px;}
+
+/* INTRO */
+.intro-box{background:#fff;border-radius:var(--radius);padding:22px 26px;margin-bottom:26px;box-shadow:var(--shadow);border-left:5px solid var(--bleu);}
+.intro-box h2{font-family:'Barlow Condensed',sans-serif;font-size:1.15rem;color:var(--bleu-fonce);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;}
+.intro-box p{font-size:.93rem;line-height:1.6;color:#555;margin-bottom:7px;}
+.machine-info{background:var(--bleu-clair);border-radius:8px;padding:13px 16px;margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.machine-info-item{font-size:.84rem;}
+.machine-info-item strong{color:var(--bleu-fonce);}
+
+/* SECTION */
+.section-block{background:#fff;border-radius:var(--radius);padding:0;margin-bottom:22px;box-shadow:var(--shadow);overflow:hidden;}
+.section-header{background:linear-gradient(135deg,var(--bleu-fonce),var(--bleu));color:#fff;padding:13px 22px;display:flex;align-items:center;gap:12px;}
+.section-header.vert{background:linear-gradient(135deg,var(--vert-fonce),var(--vert));}
+.section-number{background:rgba(255,255,255,.25);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.05rem;flex-shrink:0;}
+.section-title-block h2{font-family:'Barlow Condensed',sans-serif;font-size:1.05rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.section-title-block p{font-size:.75rem;opacity:.85;margin-top:2px;}
+.section-body{padding:20px 22px;}
+
+/* QUESTION */
+.question-block{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--gris-clair);}
+.question-block:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.question-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--bleu);margin-bottom:5px;}
+.competence-tag{display:inline-block;background:var(--bleu-clair);color:var(--bleu-fonce);font-size:.66rem;font-weight:700;padding:2px 7px;border-radius:12px;margin-left:6px;text-transform:uppercase;}
+.question-text{font-size:.95rem;line-height:1.6;color:var(--texte);margin-bottom:12px;font-weight:500;}
+.context-box{background:var(--gris-tres-clair);border:1px solid var(--gris-clair);border-radius:8px;padding:11px 14px;margin-bottom:12px;font-size:.84rem;line-height:1.5;color:#555;}
+.context-box strong{color:var(--bleu-fonce);}
+
+/* OPTIONS */
+.options-list{display:flex;flex-direction:column;gap:7px;}
+.option-item{display:flex;align-items:center;gap:11px;padding:9px 13px;border:2px solid var(--gris-clair);border-radius:8px;cursor:pointer;transition:all .2s;font-size:.89rem;}
+.option-item:hover{border-color:var(--bleu);background:var(--bleu-clair);}
+.option-item input[type=radio],.option-item input[type=checkbox]{width:17px;height:17px;accent-color:var(--bleu);cursor:pointer;flex-shrink:0;}
+.option-item.correct{border-color:var(--vert);background:var(--vert-clair);}
+.option-item.incorrect{border-color:var(--rouge);background:var(--rouge-clair);}
+
+/* INPUTS */
+.text-input{width:100%;padding:9px 13px;border:2px solid var(--gris-clair);border-radius:8px;font-size:.93rem;font-family:'Barlow',sans-serif;transition:border-color .2s;resize:vertical;}
+.text-input:focus{outline:none;border-color:var(--bleu);}
+.text-input.correct{border-color:var(--vert);background:var(--vert-clair);}
+.text-input.incorrect{border-color:var(--rouge);background:var(--rouge-clair);}
+.number-input-wrap{display:flex;align-items:center;gap:9px;margin-top:8px;}
+.number-input{width:110px;padding:9px 12px;border:2px solid var(--gris-clair);border-radius:8px;font-size:.98rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-align:center;transition:border-color .2s;}
+.number-input:focus{outline:none;border-color:var(--bleu);}
+.number-input.correct{border-color:var(--vert);background:var(--vert-clair);}
+.number-input.incorrect{border-color:var(--rouge);background:var(--rouge-clair);}
+.unit-label{font-size:.88rem;color:var(--gris);}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:.86rem;margin-bottom:8px;}
+.tbl th{background:var(--bleu-fonce);color:#fff;padding:9px 11px;text-align:left;font-weight:700;font-size:.8rem;}
+.tbl td{padding:8px 11px;border-bottom:1px solid var(--gris-clair);}
+.tbl tr:nth-child(even) td{background:var(--gris-tres-clair);}
+.tbl input[type=text],.tbl input[type=number]{width:100%;padding:5px 9px;border:1.5px solid var(--gris-clair);border-radius:6px;font-size:.86rem;font-family:'Barlow',sans-serif;}
+.tbl input.correct{border-color:var(--vert);background:var(--vert-clair);}
+.tbl input.incorrect{border-color:var(--rouge);background:var(--rouge-clair);}
+.tbl .alert{color:var(--rouge);font-weight:700;}
+.tbl .ok-st{color:var(--vert-fonce);font-weight:600;}
+.tbl.vert th{background:var(--vert-fonce);}
+
+/* BON DE COMMANDE */
+.bon-cmd{background:var(--gris-tres-clair);border:2px dashed var(--bleu);border-radius:10px;padding:16px 20px;margin:12px 0;}
+.bon-cmd h4{font-family:'Barlow Condensed',sans-serif;font-size:.98rem;color:var(--bleu-fonce);margin-bottom:13px;text-transform:uppercase;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:10px;}
+.form-group label{display:block;font-size:.76rem;font-weight:700;color:var(--gris);margin-bottom:4px;text-transform:uppercase;}
+.form-group input,.form-group select{width:100%;padding:8px 11px;border:1.5px solid var(--gris-clair);border-radius:7px;font-size:.88rem;font-family:'Barlow',sans-serif;background:#fff;transition:border-color .2s;}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--bleu);}
+.form-group input.correct{border-color:var(--vert);background:var(--vert-clair);}
+.form-group input.incorrect{border-color:var(--rouge);background:var(--rouge-clair);}
+
+/* VALIDATE BTN */
+.validate-btn{margin-top:11px;padding:8px 20px;background:var(--bleu);color:#fff;border:none;border-radius:8px;font-family:'Barlow',sans-serif;font-size:.86rem;font-weight:700;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:5px;}
+.validate-btn:hover{background:var(--bleu-fonce);transform:translateY(-1px);}
+.validate-btn:disabled{background:var(--gris);cursor:not-allowed;transform:none;}
+
+/* FEEDBACK */
+.feedback{display:none;margin-top:9px;padding:9px 13px;border-radius:8px;font-size:.86rem;font-weight:600;align-items:center;gap:7px;}
+.feedback.show{display:flex;}
+.feedback.ok{background:var(--vert-clair);color:var(--vert-fonce);border:1px solid var(--vert);}
+.feedback.nok{background:var(--rouge-clair);color:var(--rouge);border:1px solid var(--rouge);}
+
+/* FINAL */
+.final-section{background:#fff;border-radius:var(--radius);padding:28px;box-shadow:var(--shadow);text-align:center;border:3px solid var(--vert);margin-top:24px;}
+.final-section h2{font-family:'Barlow Condensed',sans-serif;font-size:1.7rem;color:var(--vert-fonce);margin-bottom:8px;}
+.comp-summary{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:14px 0;}
+.comp-badge{padding:5px 13px;border-radius:20px;font-size:.8rem;font-weight:700;}
+.comp-badge.validated{background:var(--vert-clair);color:var(--vert-fonce);border:2px solid var(--vert);}
+.comp-badge.partial{background:#fff3cd;color:#856404;border:2px solid #ffc107;}
+.send-btn{margin-top:18px;padding:13px 34px;background:linear-gradient(135deg,var(--vert-fonce),var(--vert));color:#fff;border:none;border-radius:10px;font-family:'Barlow Condensed',sans-serif;font-size:1.25rem;font-weight:700;cursor:pointer;transition:all .25s;box-shadow:0 4px 16px rgba(45,122,69,.3);letter-spacing:.5px;}
+.send-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(45,122,69,.4);}
+.send-btn:disabled{background:var(--gris);cursor:not-allowed;transform:none;box-shadow:none;}
+#send-status{margin-top:12px;font-size:.88rem;color:var(--gris);font-style:italic;}
+#send-status.success{color:var(--vert-fonce);font-style:normal;font-weight:600;}
+#send-status.error{color:var(--rouge);font-style:normal;font-weight:600;}
+
+/* NOM ELEVE */
+.eleve-box{background:#fff;border-radius:var(--radius);padding:18px 22px;margin-bottom:22px;box-shadow:var(--shadow);border-left:5px solid var(--vert);display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;}
+.eleve-box .form-group{flex:1;min-width:180px;}
+.eleve-box label{display:block;font-size:.76rem;font-weight:700;color:var(--gris);margin-bottom:4px;text-transform:uppercase;}
+.eleve-box input{width:100%;padding:9px 13px;border:2px solid var(--gris-clair);border-radius:8px;font-size:.95rem;font-family:'Barlow',sans-serif;}
+.eleve-box input:focus{outline:none;border-color:var(--vert);}
+
+@media(max-width:600px){
+  header{flex-wrap:wrap;padding:12px 14px;}
+  .header-right{flex-direction:row;margin-left:0;width:100%;justify-content:space-between;}
+  .form-row{grid-template-columns:1fr;}
+  .machine-info{grid-template-columns:1fr;}
+}
+
+/* ── VERROU IDENTITÉ ── */
+.field-error{border-color:#e74c3c!important;background:#fff5f5!important;animation:shake .3s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.required-hint{display:none;color:#e74c3c;font-size:.72rem;font-weight:700;margin-top:3px;}
+.required-hint.show{display:block;}
+.eleve-box label .req{color:#e74c3c;margin-left:2px;}
+
+/* ── ÉVALUATION PRONOTE ── */
+.pronote-block{background:#fff;border-radius:var(--radius);padding:20px 24px;margin-bottom:10px;box-shadow:var(--shadow);border:2px solid var(--vert);}
+.pronote-filiere{font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gris);margin-bottom:12px;padding:6px 10px;background:var(--gris-tres-clair);border-radius:6px;}
+.pronote-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:9px 13px;border-radius:8px;margin-bottom:7px;border:2px solid rgba(0,0,0,.08);}
+.pronote-dot{width:28px;height:28px;border-radius:6px;flex-shrink:0;}
+.pronote-info{min-width:0;}
+.pronote-comp-code{font-weight:800;font-size:.82rem;font-family:'Barlow Condensed',sans-serif;letter-spacing:.3px;}
+.pronote-comp-lib{font-size:.77rem;color:#555;margin-top:1px;line-height:1.3;}
+.pronote-right{text-align:right;flex-shrink:0;}
+.pronote-niveau{font-family:'Barlow Condensed',sans-serif;font-size:.82rem;font-weight:700;white-space:nowrap;}
+.pronote-pts{font-size:.7rem;color:#888;margin-top:1px;}
+.pronote-score{font-size:.72rem;color:#666;margin-top:2px;}
+.pronote-legende{margin-top:14px;border-top:1px solid var(--gris-clair);padding-top:12px;}
+.pronote-legende-title{font-size:.72rem;color:var(--gris);font-weight:700;text-transform:uppercase;margin-bottom:7px;letter-spacing:.5px;}
+.pronote-legende-grid{display:flex;flex-wrap:wrap;gap:5px;}
+.pronote-leg-item{display:flex;align-items:center;gap:5px;font-size:.7rem;padding:3px 8px;border-radius:4px;background:var(--gris-tres-clair);}
+.pronote-leg-dot{width:14px;height:14px;border-radius:3px;flex-shrink:0;}
+.eval-intro-box{background:var(--bleu-clair);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:.83rem;line-height:1.5;color:var(--bleu-fonce);}
+
+</style>
+</head>
+<body>
+
+<header>
+  <img class="logo" src="https://services.ard.fr/fileadmin/users/grenoble-vaucanson/logo.jpg" alt="Lycée Vaucanson" onerror="this.style.display='none'">
+  <div class="header-text">
+    <h1>TP – Gestion de Commande &amp; de Stock</h1>
+    <p>BAC PRO PLP &nbsp;·&nbsp; CAP CIP</p>
+    <p>Lycée Polyvalent Vaucanson – Grenoble</p>
+  </div>
+  <div class="header-machine">
+    <span>📦 Encartonneuse</span>
+  </div>
+  <div class="header-right">
+    <div class="hbox">
+      <div class="hbox-label">⏱ Temps restant</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div id="timer">2:00:00</div>
+        <button id="pause-btn" onclick="togglePause()" title="Pause / Reprendre" style="background:rgba(255,255,255,0.25);border:2px solid rgba(255,255,255,0.5);border-radius:6px;color:#fff;font-size:1rem;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;flex-shrink:0;">⏸</button>
+      </div>
+    </div>
+    <div class="hbox">
+      <div class="hbox-label">Questions</div>
+      <div id="score-display">0 / 40</div>
+    </div>
+  </div>
+</header>
+
+<div class="progress-section">
+  <div class="progress-header">
+    <span>Avancement du TP</span>
+    <span id="progress-text">0 / 40 questions validées</span>
+  </div>
+  <div class="progress-bar-track">
+    <div class="progress-bar-fill" id="progress-fill"></div>
+  </div>
+  <div class="progress-milestones">
+    <div class="milestone" id="m1"><div class="milestone-dot"></div>Partie 1</div>
+    <div class="milestone" id="m2"><div class="milestone-dot"></div>Partie 2</div>
+    <div class="milestone" id="m3"><div class="milestone-dot"></div>Partie 3</div>
+    <div class="milestone" id="m4"><div class="milestone-dot"></div>Partie 4</div>
+    <div class="milestone" id="m5"><div class="milestone-dot"></div>Terminé ✓</div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- NOM ELEVE -->
+<div class="eleve-box">
+  <div class="form-group">
+    <label>Nom <span class="req">*</span></label>
+    <input type="text" id="eleve-nom" placeholder="Votre nom...">
+    <div class="required-hint" id="hint-nom">⚠ Le nom est obligatoire</div>
+  </div>
+  <div class="form-group">
+    <label>Prénom <span class="req">*</span></label>
+    <input type="text" id="eleve-prenom" placeholder="Votre prénom...">
+    <div class="required-hint" id="hint-prenom">⚠ Le prénom est obligatoire</div>
+  </div>
+  <div class="form-group">
+    <label>Classe <span class="req">*</span></label>
+    <select id="eleve-classe">
+      <option value="">-- Sélectionnez votre classe --</option>
+      <option value="2PMIA1">2PMIA1</option>
+      <option value="2PMIA2">2PMIA2</option>
+      <option value="2PMIA3">2PMIA3</option>
+      <option value="2PMIA4">2PMIA4</option>
+      <option value="2PMIA5">2PMIA5</option>
+      <option value="1PLP">1PLP</option>
+      <option value="TPLP">TPLP</option>
+      <option value="1CIP G1">1CIP G1</option>
+      <option value="1CIP G2">1CIP G2</option>
+      <option value="2CIP G1">2CIP G1</option>
+      <option value="2CIP G2">2CIP G2</option>
+    </select>
+    <div class="required-hint" id="hint-classe">⚠ La classe est obligatoire</div>
+  </div>
+</div>
+
+<!-- INTRO -->
+<div class="intro-box">
+  <h2>📋 Mise en situation</h2>
+  <p>Vous êtes <strong>conducteur de ligne de conditionnement</strong> au sein d un etablissement utilisant la machine <strong>Encartonneuse ERMAFLEX EB20</strong> fabriquee par ERM Automatismes Industriels (Carpentras, 84). Cette unite automatique assure le <strong>conditionnement de barquettes de pots ou de flacons dans des cartons</strong>. Elle fait partie de la ligne complete ERMAFLEX de production de produits cosmetiques.</p>
+  <p>Ce TP porte sur la <strong>presentation de la machine et son flux</strong>, la <strong>gestion du stock des consommables</strong>, la <strong>preparation de commandes et les calculs de production</strong>, ainsi que les <strong>indicateurs de performance, alarmes et compte-rendu de fin de poste</strong>.</p>
+  <p>Repondez a chaque question puis cliquez sur <strong>« Valider »</strong>. Vous obtenez immediatement un code couleur : <span style="color:var(--vert-fonce);font-weight:700;">vert = correct</span> · <span style="color:var(--rouge);font-weight:700;">rouge = a revoir</span>.</p>
+  <div class="machine-info">
+    <div class="machine-info-item"><strong>Machine :</strong> ENCARTONNEUSE EB20</div>
+    <div class="machine-info-item"><strong>Constructeur :</strong> ERM Automatismes Industriels – Carpentras (84)</div>
+    <div class="machine-info-item"><strong>Fonction :</strong> Encartonner barquettes de pots ou flacons</div>
+    <div class="machine-info-item"><strong>Produits :</strong> Barquettes 4 pots ou 6 flacons de creme cosmetique</div>
+    <div class="machine-info-item"><strong>Cadence maxi :</strong> 70 cartons / heure en continu</div>
+    <div class="machine-info-item"><strong>Alimentation :</strong> 400 V triphase + air comprime 3 bars</div>
+  </div>
+</div>
+
+<!-- ======== PARTIE 1 (ex-Partie 2) : Gestion du stock des consommables ======== -->
+<div class="section-block">
+  <div class="section-header vert">
+    <div class="section-number">1</div>
+    <div class="section-title-block">
+      <h2>Gestion du stock des consommables</h2>
+      <p>CP03 – Préparer · CP04 – Piloter · CP05 – Suivi de production</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <!-- Q1 -->
+    <div class="question-block" id="qb1">
+      <div class="question-label">Question 1 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">Le compteur de cycles de l\'EB20 affiche <strong>87 400 cartons</strong>. La maintenance préventive du système d\'indexage doit être faite tous les <strong>100 000 cartons</strong>. À une cadence de <strong>490 cartons/jour</strong> (7h × 70 cart/h), dans combien de jours faut-il planifier la maintenance ?</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q1-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q1-ans" placeholder="0" min="0">
+        <span class="unit-label">jours</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(1,25,27,'Correct ! 100000-87400=12600. 12600/490 = 25,7 jours, soit ~26 jours.','Calcul : 100000 - 87400 = 12600 cartons. 12600 / 490 = 25,7 jours (~26 jours).')">Valider</button>
+      <div class="feedback" id="fb1"></div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="question-block" id="qb2">
+      <div class="question-label">Question 2 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Le fournisseur de cartons a un <strong>délai de livraison de 6 jours ouvrés</strong>. La consommation moyenne est de <strong>490 cartons/jour</strong>. Calculez le <strong>stock minimum (point de commande)</strong> avec une marge de sécurité de <strong>25 %</strong>.</div>
+      <div class="context-box"><strong>Formule :</strong> Point de commande = (Conso × Délai) × (1 + sécurité)</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q2-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q2-ans" placeholder="0" min="0">
+        <span class="unit-label">cartons</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(2,3670,3680,'Correct ! 490x6=2940, x1,25 = 3675 cartons.','Calcul : 490 x 6 = 2940 cartons. Avec sécurité 25 % : 2940 x 1,25 = 3675 cartons.')">Valider</button>
+      <div class="feedback" id="fb2"></div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="question-block" id="qb3">
+      <div class="question-label">Question 3 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">Analysez le tableau de stock ci-dessous. <strong>Cochez les articles nécessitant une commande urgente</strong> (stock actuel &lt; stock minimum).</div>
+      <div class="context-box">
+        <table class="tbl">
+          <thead><tr><th>Référence</th><th>Désignation</th><th>Stock actuel</th><th>Stock mini</th><th>Unité</th></tr></thead>
+          <tbody>
+            <tr><td>CART-POT-4x4</td><td>Carton 4 barquettes pots</td><td class="alert">120</td><td>500</td><td>cartons</td></tr>
+            <tr><td>CART-FLA-4x6</td><td>Carton 4 barquettes flacons</td><td class="ok-st">650</td><td>500</td><td>cartons</td></tr>
+            <tr><td>BARQ-POT-4</td><td>Barquette 4 pots</td><td class="alert">85</td><td>200</td><td>barquettes</td></tr>
+            <tr><td>RUBAN-COL</td><td>Ruban adhésif fermeture</td><td class="ok-st">22</td><td>10</td><td>rouleaux</td></tr>
+            <tr><td>HUILE-ISO46</td><td>Huile hydraulique ISO 46</td><td class="alert">3</td><td>10</td><td>litres</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q3" value="RUBAN"> RUBAN-COL (stock : 22)</label>
+        <label class="option-item"><input type="checkbox" name="q3" value="CART-POT"> CART-POT-4x4 (stock : 120)</label>
+        <label class="option-item"><input type="checkbox" name="q3" value="CART-FLA"> CART-FLA-4x6 (stock : 650)</label>
+        <label class="option-item"><input type="checkbox" name="q3" value="HUILE"> HUILE-ISO46 (stock : 3 L)</label>
+        <label class="option-item"><input type="checkbox" name="q3" value="BARQ-POT"> BARQ-POT-4 (stock : 85)</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(3,['CART-POT','HUILE','BARQ-POT'],'Parfait ! 3 articles en rupture.','En rupture : CART-POT-4x4 (120<500), BARQ-POT-4 (85<200), HUILE-ISO46 (3<10).')">Valider</button>
+      <div class="feedback" id="fb3"></div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="question-block" id="qb4">
+      <div class="question-label">Question 4 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">Parmi les articles du tableau précédent, lequel est <strong>le plus critique</strong> pour la production de cartons de pots aujourd\'hui ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q4" value="a"> CART-FLA-4x6 (carton flacons, mais on produit des pots)</label>
+        <label class="option-item"><input type="radio" name="q4" value="b"> RUBAN-COL (ruban adhésif)</label>
+        <label class="option-item"><input type="radio" name="q4" value="c"> HUILE-ISO46 (maintenance vérins)</label>
+        <label class="option-item"><input type="radio" name="q4" value="d"> CART-POT-4x4 (carton pots)</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(4,'d','Correct ! Sans carton de pots, la production de cartons de pots s\'arrête immédiatement.','Le carton CART-POT-4x4 est essentiel : sans lui, pas de cartonnage du jour. L\'huile peut tenir, le ruban est OK, et CART-FLA n\'est pas utilisé aujourd\'hui.')">Valider</button>
+      <div class="feedback" id="fb4"></div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="question-block" id="qb5">
+      <div class="question-label">Question 5 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Calculez la <strong>quantité de cartons pour pots à commander</strong> pour couvrir <strong>5 jours de production</strong>.</div>
+      <div class="context-box">
+        <strong>Données :</strong><br>
+        - Cadence : 70 cartons/heure<br>
+        - Durée poste : 7 h/jour<br>
+        - Stock actuel : 120 cartons<br>
+        - Stock sécurité : 200 cartons
+      </div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q5-calc" rows="3" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q5-ans" placeholder="0" min="0">
+        <span class="unit-label">cartons à commander</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(5,2520,2540,'Excellent ! 70x7x5=2450. À commander = 2450 - 120 + 200 = 2530 cartons.','Calcul : 70x7x5 = 2450 cartons. À commander = 2450 - stock(120) + sécurité(200) = 2530 cartons.')">Valider</button>
+      <div class="feedback" id="fb5"></div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="question-block" id="qb6">
+      <div class="question-label">Question 6 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">L\'entreprise a consommé <strong>96 000 cartons</strong> sur l\'année. Le stock moyen sur l\'année est de <strong>3 200 cartons</strong>. Calculez le <strong>taux de rotation du stock</strong>.</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q6-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q6-ans" placeholder="0" min="0">
+        <span class="unit-label">rotations/an</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(6,29,31,'Correct ! 96000/3200 = 30 rotations/an.','Taux = 96000 / 3200 = 30 rotations/an.')">Valider</button>
+      <div class="feedback" id="fb6"></div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="question-block" id="qb7">
+      <div class="question-label">Question 7 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">Le plan de maintenance préventive de l\'EB20 impose diverses vérifications. Indiquez la fréquence de ces deux opérations clés.</div>
+      <div style="font-size:.86rem;font-weight:600;margin-bottom:7px;">Contrôle visuel des poussoirs et vérins :</div>
+      <div class="options-list" style="margin-bottom:10px;">
+        <label class="option-item"><input type="radio" name="q7a" value="a"> Quotidien (en début de poste)</label>
+        <label class="option-item"><input type="radio" name="q7a" value="b"> Mensuel</label>
+        <label class="option-item"><input type="radio" name="q7a" value="c"> Trimestriel</label>
+        <label class="option-item"><input type="radio" name="q7a" value="d"> Annuel</label>
+      </div>
+      <div style="font-size:.86rem;font-weight:600;margin-bottom:7px;">Vidange du circuit hydraulique :</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q7b" value="a"> Hebdomadaire</label>
+        <label class="option-item"><input type="radio" name="q7b" value="b"> Annuelle</label>
+        <label class="option-item"><input type="radio" name="q7b" value="c"> Mensuelle</label>
+        <label class="option-item"><input type="radio" name="q7b" value="d"> Tous les 2 ans</label>
+      </div>
+      <button class="validate-btn" onclick="valDouble(7,'q7a','a','q7b','b','Correct ! Contrôle quotidien des poussoirs ; vidange hydraulique annuelle.','Doc. ERM : contrôle visuel des poussoirs/vérins en début de poste (quotidien). Vidange du circuit hydraulique annuelle.')">Valider</button>
+      <div class="feedback" id="fb7"></div>
+    </div>
+
+    <!-- Q8 -->
+    <div class="question-block" id="qb8">
+      <div class="question-label">Question 8 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Une livraison de cartons arrive en zone de stockage. Quelle est la <strong>procédure correcte de réception</strong> ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q8" value="a"> Vérifier la quantité et les références par rapport au bon de commande</label>
+        <label class="option-item"><input type="checkbox" name="q8" value="b"> Mettre directement les cartons en machine sans contrôle</label>
+        <label class="option-item"><input type="checkbox" name="q8" value="c"> Contrôler l\'état des palettes (pas de chocs, cartons intacts)</label>
+        <label class="option-item"><input type="checkbox" name="q8" value="d"> Mettre à jour le tableau de stock</label>
+        <label class="option-item"><input type="checkbox" name="q8" value="e"> Signaler tout écart au responsable et au fournisseur</label>
+        <label class="option-item"><input type="checkbox" name="q8" value="f"> Jeter le bon de livraison après vérification</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(8,['a','c','d','e'],'Parfait !','Procédure : vérifier qty/réf, contrôler état, mettre à jour stock, signaler écarts. NE PAS mettre en machine sans contrôle, NE PAS jeter le bon.')">Valider</button>
+      <div class="feedback" id="fb8"></div>
+    </div>
+
+    <!-- Q9 -->
+    <div class="question-block" id="qb9">
+      <div class="question-label">Question 9 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">En fin de campagne d\'utilisation, quelles sont les actions de nettoyage et de rangement à effectuer sur l\'encartonneuse EB20 ? (Réponse rédigée)</div>
+      <textarea class="text-input" id="q9-ans" rows="4" placeholder="Décrivez les actions..."></textarea>
+      <button class="validate-btn" onclick="valTexte(9,['nettoy','poussiere','poussière','rangement','consigner','consigne','aspir','souffl','vider','poussoir','barquette'],3,'Bien rédigé !','Actions : nettoyer/aspirer la poussière de carton, vider les bacs résiduels, ranger consommables non utilisés, consigner les anomalies dans le cahier.')">Valider</button>
+      <div class="feedback" id="fb9"></div>
+    </div>
+
+    <!-- Q10 -->
+    <div class="question-block" id="qb10">
+      <div class="question-label">Question 10 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">Sur l\'année, la machine a subi <strong>15 arrêts pour rupture de cartons</strong>, totalisant <strong>18 heures d\'arrêt</strong>. Le temps total d\'ouverture annuel est de <strong>1 800 heures</strong>. Calculez le <strong>taux d\'indisponibilité dû aux ruptures</strong>.</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q10-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q10-ans" placeholder="0" min="0" step="0.01">
+        <span class="unit-label">%</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(10,0.95,1.05,'Correct ! (18/1800)x100 = 1,00 %.','(18 / 1800) x 100 = 1,00 %.')">Valider</button>
+      <div class="feedback" id="fb10"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ======== PARTIE 2 (ex-Partie 4) : Indicateurs ======== -->
+<div class="section-block">
+  <div class="section-header">
+    <div class="section-number">2</div>
+    <div class="section-title-block">
+      <h2>Indicateurs de production et communication</h2>
+      <p>CP05 – Suivi · CP06 – Modes opératoires · CP08 – Amélioration</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <!-- Q11 -->
+    <div class="question-block" id="qb11">
+      <div class="question-label">Question 11 <span class="competence-tag">CP06</span></div>
+      <div class="question-text">Sur une journée de <strong>7 heures de production</strong>, l\'EB20 a produit <strong>350 cartons</strong>. Cadence nominale : <strong>70 cartons/h</strong>. Calculez le <strong>TRS</strong>.</div>
+      <div class="context-box"><strong>Rappel :</strong> TRS = (Production réelle / Production théorique) x 100.</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q11-calc" rows="3" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q11-ans" placeholder="0" min="0" max="100" step="0.1">
+        <span class="unit-label">%</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(11,69,72,'Excellent ! Théorique=70x7=490. TRS=(350/490)x100=71,4 %.','Théorique = 70 x 7 = 490. TRS = (350 / 490) x 100 = 71,4 %.')">Valider</button>
+      <div class="feedback" id="fb11"></div>
+    </div>
+
+    <!-- Q12 -->
+    <div class="question-block" id="qb12">
+      <div class="question-label">Question 12 <span class="competence-tag">CP06</span></div>
+      <div class="question-text">Sur un poste de <strong>7 heures</strong>, l\'EB20 a connu :</div>
+      <div class="context-box">
+        - Temps d\'ouverture (TO) : 7h = <strong>420 min</strong><br>
+        - Arrêts pannes/réglages : <strong>30 min</strong> (TF = 390 min)<br>
+        - Production : <strong>420 cartons</strong> (cadence = 70/h ≈ 1,17/min)<br>
+        - Cartons non conformes : <strong>10 rebutés</strong><br>
+        Calculez le <strong>TRS complet</strong> (D × P × Q × 100).
+      </div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q12-calc" rows="4" placeholder="D = ...&#10;P = ...&#10;Q = ...&#10;TRS = ..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q12-ans" placeholder="0" min="0" max="100" step="0.1">
+        <span class="unit-label">%</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(12,86,93,'Bravo ! D=92,86 % ; P=420/(390x1,167)=92,3 % ; Q=410/420=97,6 % ; TRS≈83,7 %.','D=390/420=92,86%. P=420/(390x1,167)=92,3%. Q=(420-10)/420=97,6%. TRS=0,9286x0,923x0,976x100 ≈ 83,7%.')">Valider</button>
+      <div class="feedback" id="fb12"></div>
+    </div>
+
+    <!-- Q13 -->
+    <div class="question-block" id="qb13">
+      <div class="question-label">Question 13 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">En fin de matinée, le compteur affiche <strong>280 cartons</strong> produits sur <strong>4 heures</strong> de production. Calculez la <strong>cadence réelle</strong>.</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q13-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q13-ans" placeholder="0" min="0" step="0.1">
+        <span class="unit-label">cartons/heure</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(13,69,71,'Correct ! 280/4 = 70 cartons/h (= cadence nominale !).','Cadence réelle = 280 / 4 = 70 cartons/h, parfaitement à la nominale.')">Valider</button>
+      <div class="feedback" id="fb13"></div>
+    </div>
+
+    <!-- Q14 -->
+    <div class="question-block" id="qb14">
+      <div class="question-label">Question 14 <span class="competence-tag">CP08</span></div>
+      <div class="question-text">La cadence nominale est de <strong>70 cartons/h</strong>. Sur une journée de 7h, la production a été de <strong>350 cartons</strong>. Combien de cartons ont été <strong>perdus</strong> par rapport au nominal ?</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q14-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q14-ans" placeholder="0" min="0">
+        <span class="unit-label">cartons perdus</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(14,138,142,'Excellent ! Théorique=490. Perte=490-350=140.','Théorique = 70 x 7 = 490. Perte = 490 - 350 = 140 cartons.')">Valider</button>
+      <div class="feedback" id="fb14"></div>
+    </div>
+
+    <!-- Q15 -->
+    <div class="question-block" id="qb15">
+      <div class="question-label">Question 15 <span class="competence-tag">CP06</span></div>
+      <div class="question-text">Le message d\'alarme « <strong>DEFAUT INDEXAGE PLATEAU</strong> » s\'affiche sur le pupitre Magelis. Quelle est la cause probable ? Décrivez la procédure à suivre.</div>
+      <div class="options-list" style="margin-bottom:10px;">
+        <label class="option-item"><input type="radio" name="q15a" value="a"> Manque de cartons</label>
+        <label class="option-item"><input type="radio" name="q15a" value="b"> Le plateau d\'indexage ne tourne pas correctement (capteur défaillant ou blocage mécanique)</label>
+        <label class="option-item"><input type="radio" name="q15a" value="c"> Surchauffe moteur principal</label>
+        <label class="option-item"><input type="radio" name="q15a" value="d"> Pression d\'air insuffisante</label>
+      </div>
+      <div style="font-size:.86rem;font-weight:600;margin-bottom:7px;">Procédure à suivre :</div>
+      <textarea class="text-input" id="q15-proc" rows="3" placeholder="Décrivez la procédure..."></textarea>
+      <button class="validate-btn" onclick="valQ15()">Valider</button>
+      <div class="feedback" id="fb15"></div>
+    </div>
+
+    <!-- Q16 -->
+    <div class="question-block" id="qb16">
+      <div class="question-label">Question 16 <span class="competence-tag">CP08</span></div>
+      <div class="question-text">L\'alarme « <strong>DEFAUT POUSSEE</strong> » se déclenche fréquemment (10 % des cycles). Vous appliquez la méthode <strong>5M</strong>. Quelle est la <strong>cause racine la plus probable</strong> ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q16" value="a"> Matériel : poussoir ou élévateur usé/déréglé</label>
+        <label class="option-item"><input type="radio" name="q16" value="b"> Main d\'œuvre : opérateur insuffisamment formé</label>
+        <label class="option-item"><input type="radio" name="q16" value="c"> Milieu : température atelier trop élevée</label>
+        <label class="option-item"><input type="radio" name="q16" value="d"> Méthode : ordre de montage non respecté</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(16,'a','Correct ! Cause Matériel : poussoir ou élévateur défaillant.','5M : cause Matériel - le poussoir ou l\'élévateur ne termine pas son cycle. Vérifier course, capteurs, vérins pneumatiques.')">Valider</button>
+      <div class="feedback" id="fb16"></div>
+    </div>
+
+    <!-- Q17 -->
+    <div class="question-block" id="qb17">
+      <div class="question-label">Question 17 <span class="competence-tag">CP08</span></div>
+      <div class="question-text">L\'alarme « DEFAUT POUSSEE » arrête le cycle. <strong>Proposez une amélioration</strong> du processus pour réduire ces arrêts intempestifs.</div>
+      <textarea class="text-input" id="q17-ans" rows="5" placeholder="Décrivez votre proposition..."></textarea>
+      <button class="validate-btn" onclick="valTexte(17,['maintenance','prévent','prevent','contrôle','controle','régul','regul','vérif','verif','poussoir','vérin','verin','capteur','plan','planifi'],2,'Bonne proposition !','Pistes : plan de maintenance préventive régulier, contrôle quotidien des poussoirs/vérins, calibration des capteurs, remplacement préventif des pièces d\'usure.')">Valider</button>
+      <div class="feedback" id="fb17"></div>
+    </div>
+
+    <!-- Q18 -->
+    <div class="question-block" id="qb18">
+      <div class="question-label">Question 18 <span class="competence-tag">CP08</span></div>
+      <div class="question-text">Quels indicateurs sont <strong>pertinents</strong> pour un tableau de bord hebdomadaire de l\'EB20 ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q18" value="a"> Cartons produits / semaine</label>
+        <label class="option-item"><input type="checkbox" name="q18" value="b"> TRS hebdomadaire</label>
+        <label class="option-item"><input type="checkbox" name="q18" value="c"> Couleur des t-shirts opérateurs</label>
+        <label class="option-item"><input type="checkbox" name="q18" value="d"> Taux de rebut (% cartons mal fermés)</label>
+        <label class="option-item"><input type="checkbox" name="q18" value="e"> Nb d\'arrêts machine et leur cause</label>
+        <label class="option-item"><input type="checkbox" name="q18" value="f"> Météo de la semaine</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(18,['a','b','d','e'],'Parfait !','KPI pertinents : Production, TRS, Taux rebut, Arrêts machine. Les autres ne sont pas des KPI.')">Valider</button>
+      <div class="feedback" id="fb18"></div>
+    </div>
+
+    <!-- Q19 -->
+    <div class="question-block" id="qb19">
+      <div class="question-label">Question 19 <span class="competence-tag">CP01</span></div>
+      <div class="question-text">Rédigez un <strong>compte-rendu de fin de poste</strong> destiné au conducteur du poste suivant, concernant la production EB20 du jour.</div>
+      <textarea class="text-input" id="q19-ans" rows="7" placeholder="Compte-rendu de fin de poste..."></textarea>
+      <button class="validate-btn" onclick="valTexte(19,['production','carton','stock','attention','poste','arrêt','arret','consigne','barquette','pot','flacon'],3,'Excellent !','Compte-rendu : production réalisée (cartons produits par référence), état du stock, arrêts/anomalies, points d\'attention pour le prochain poste.')">Valider</button>
+      <div class="feedback" id="fb19"></div>
+    </div>
+
+    <!-- Q20 -->
+    <div class="question-block" id="qb20">
+      <div class="question-label">Question 20 <span class="competence-tag">CP01</span></div>
+      <div class="question-text">Un client a renvoyé un lot de cartons mal fermés (ruban décollé). Rédigez un <strong>court email</strong> de réponse au client : excuses, cause identifiée, action corrective, compensation.</div>
+      <textarea class="text-input" id="q20-ans" rows="6" placeholder="Objet : ...&#10;Bonjour, ..."></textarea>
+      <button class="validate-btn" onclick="valTexte(20,['excuse','désol','desol','remplac','correctif','contrôle','controle','qualité','qualite','ruban','dédommag','dedommag','fermeture'],3,'Bien rédigé !','Email type : excuses, cause (défaut fermeture, ruban), action corrective (vérification, contrôle qualité), compensation (remplacement du lot).')">Valider</button>
+      <div class="feedback" id="fb20"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ======== PARTIE 3 (ex-Partie 1) : Présentation machine ======== -->
+<div class="section-block">
+  <div class="section-header vert">
+    <div class="section-number">3</div>
+    <div class="section-title-block">
+      <h2>Présentation de la machine et des flux</h2>
+      <p>CP02 – S\'informer · CP03 – Préparer</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <!-- Q21 -->
+    <div class="question-block" id="qb21">
+      <div class="question-label">Question 21 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">L\'EB20 dispose d\'un <strong>plateau d\'indexage</strong>. Quel est son rôle ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q21" value="a"> Lire le code-barres des cartons</label>
+        <label class="option-item"><input type="radio" name="q21" value="b"> Évacuer les cartons défectueux</label>
+        <label class="option-item"><input type="radio" name="q21" value="c"> Réguler la température</label>
+        <label class="option-item"><input type="radio" name="q21" value="d"> Positionner précisément les cartons à chaque étape (formage, remplissage, fermeture)</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(21,'d','Correct ! Le plateau d\'indexage positionne les cartons précisément à chaque poste.','Le plateau d\'indexage assure le positionnement précis des cartons à chaque poste de la machine (formage, remplissage barquettes, fermeture).')">Valider</button>
+      <div class="feedback" id="fb21"></div>
+    </div>
+
+    <!-- Q22 -->
+    <div class="question-block" id="qb22">
+      <div class="question-label">Question 22 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">Quels <strong>dispositifs de contrôle ou de sécurité</strong> équipent l\'EB20 ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q22" value="a"> Capteur de présence carton</label>
+        <label class="option-item"><input type="checkbox" name="q22" value="b"> GPS de localisation</label>
+        <label class="option-item"><input type="checkbox" name="q22" value="c"> Capteur de fin de bobine de ruban</label>
+        <label class="option-item"><input type="checkbox" name="q22" value="d"> Carter de protection avec contact de sécurité</label>
+        <label class="option-item"><input type="checkbox" name="q22" value="e"> Bouton d\'arrêt d\'urgence</label>
+        <label class="option-item"><input type="checkbox" name="q22" value="f"> Reconnaissance vocale</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(22,['a','c','d','e'],'Parfait !','Dispositifs : capteur carton, capteur fin ruban, carter sécurité, arrêt d\'urgence. Pas de GPS ni reconnaissance vocale.')">Valider</button>
+      <div class="feedback" id="fb22"></div>
+    </div>
+
+    <!-- Q23 -->
+    <div class="question-block" id="qb23">
+      <div class="question-label">Question 23 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">Quelle est la <strong>fonction principale</strong> de l\'encartonneuse ERMAFLEX EB20 ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q23" value="a"> Remplir des barquettes avec des produits</label>
+        <label class="option-item"><input type="radio" name="q23" value="b"> Étiqueter les pots et flacons</label>
+        <label class="option-item"><input type="radio" name="q23" value="c"> Former, remplir avec des barquettes (pots ou flacons) et fermer des cartons</label>
+        <label class="option-item"><input type="radio" name="q23" value="d"> Compacter des déchets en briquettes</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(23,'c','Correct ! L\'EB20 forme, remplit et ferme des cartons de barquettes (pots ou flacons).','L\'encartonneuse EB20 forme les cartons à plat, les remplit avec des barquettes (4 pots ou 6 flacons) et les ferme par ruban adhésif.')">Valider</button>
+      <div class="feedback" id="fb23"></div>
+    </div>
+
+    <!-- Q24 -->
+    <div class="question-block" id="qb24">
+      <div class="question-label">Question 24 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">Sur quel <strong>principe</strong> repose la fermeture des cartons par l\'EB20 ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q24" value="a"> Collage par adhésif chimique liquide</label>
+        <label class="option-item"><input type="radio" name="q24" value="b"> Application de ruban adhésif (banderoleuse)</label>
+        <label class="option-item"><input type="radio" name="q24" value="c"> Soudure thermique du carton</label>
+        <label class="option-item"><input type="radio" name="q24" value="d"> Agrafage métallique automatique</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(24,'b','Correct ! Fermeture par ruban adhésif appliqué automatiquement.','La fermeture des cartons EB20 se fait par ruban adhésif (banderoleuse intégrée), comme sur une encartonneuse standard.')">Valider</button>
+      <div class="feedback" id="fb24"></div>
+    </div>
+
+    <!-- Q25 -->
+    <div class="question-block" id="qb25">
+      <div class="question-label">Question 25 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">Quels sont les <strong>2 types de barquettes</strong> que peut traiter l\'EB20 ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q25" value="a"> Barquettes alvéolaires pour œufs</label>
+        <label class="option-item"><input type="checkbox" name="q25" value="b"> Barquettes 4 pots de crème</label>
+        <label class="option-item"><input type="checkbox" name="q25" value="c"> Barquettes 6 flacons cosmétiques</label>
+        <label class="option-item"><input type="checkbox" name="q25" value="d"> Barquettes 12 dosettes café</label>
+        <label class="option-item"><input type="checkbox" name="q25" value="e"> Barquettes pour briquettes papier</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(25,['b','c'],'Parfait ! 4 pots et 6 flacons.','L\'EB20 traite les barquettes 4 pots (crème) et 6 flacons (cosmétiques).')">Valider</button>
+      <div class="feedback" id="fb25"></div>
+    </div>
+
+    <!-- Q26 -->
+    <div class="question-block" id="qb26">
+      <div class="question-label">Question 26 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Indépendamment des cartons et barquettes, quels articles le pilote doit-il aussi suivre pour la <strong>maintenance</strong> ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q26" value="a"> Huile hydraulique ISO 46</label>
+        <label class="option-item"><input type="checkbox" name="q26" value="b"> Ruban adhésif de fermeture</label>
+        <label class="option-item"><input type="checkbox" name="q26" value="c"> Téléviseurs</label>
+        <label class="option-item"><input type="checkbox" name="q26" value="d"> Filtres pneumatiques</label>
+        <label class="option-item"><input type="checkbox" name="q26" value="e"> Pneus auto</label>
+        <label class="option-item"><input type="checkbox" name="q26" value="f"> Joints d\'étanchéité de rechange</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(26,['a','b','d','f'],'Parfait !','Articles maintenance : huile ISO46, ruban adhésif, filtres pneumatiques, joints d\'étanchéité.')">Valider</button>
+      <div class="feedback" id="fb26"></div>
+    </div>
+
+    <!-- Q27 -->
+    <div class="question-block" id="qb27">
+      <div class="question-label">Question 27 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Selon la fiche technique, quelle est la <strong>masse</strong> de l\'encartonneuse EB20 (en kg) ?</div>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q27-ans" placeholder="0" min="0">
+        <span class="unit-label">kg</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(27,180,220,'Correct ! Masse ~ 200 kg.','Selon la fiche technique ERM, masse de l\'EB20 environ 200 kg.')">Valider</button>
+      <div class="feedback" id="fb27"></div>
+    </div>
+
+    <!-- Q28 -->
+    <div class="question-block" id="qb28">
+      <div class="question-label">Question 28 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Un rouleau de ruban adhésif permet de fermer <strong>140 cartons</strong>. La cadence est de <strong>70 cartons/h</strong>. Calculez l\'<strong>autonomie</strong> d\'un rouleau.</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q28-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q28-ans" placeholder="0" min="0" step="0.1">
+        <span class="unit-label">heures</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(28,1.9,2.1,'Correct ! 140/70 = 2 heures.','Autonomie = 140 / 70 = 2 heures par rouleau.')">Valider</button>
+      <div class="feedback" id="fb28"></div>
+    </div>
+
+    <!-- Q29 -->
+    <div class="question-block" id="qb29">
+      <div class="question-label">Question 29 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">Pour passer du format <strong>FLACONS</strong> au format <strong>POTS</strong>, quelles actions sont nécessaires selon ERM ? Et après un arrêt d\'urgence, quelle est la 1re action ?</div>
+      <div style="font-size:.86rem;font-weight:600;margin-bottom:7px;">Action principale du changement de format :</div>
+      <div class="options-list" style="margin-bottom:10px;">
+        <label class="option-item"><input type="radio" name="q29a" value="a"> Adapter les guides et changer les magasins de cartons</label>
+        <label class="option-item"><input type="radio" name="q29a" value="b"> Aucun réglage nécessaire</label>
+        <label class="option-item"><input type="radio" name="q29a" value="c"> Remplacer entièrement la machine</label>
+        <label class="option-item"><input type="radio" name="q29a" value="d"> Augmenter la pression d\'air</label>
+      </div>
+      <div style="font-size:.86rem;font-weight:600;margin-bottom:7px;">Après un arrêt d\'urgence :</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q29b" value="a"> Redémarrer le cycle directement</label>
+        <label class="option-item"><input type="radio" name="q29b" value="b"> Remédier au problème puis réarmer (bouton réarmement)</label>
+        <label class="option-item"><input type="radio" name="q29b" value="c"> Vider le bac à déchets</label>
+        <label class="option-item"><input type="radio" name="q29b" value="d"> Changer le fusible</label>
+      </div>
+      <button class="validate-btn" onclick="valDouble(29,'q29a','a','q29b','b','Correct ! Adapter guides + magasins. Arrêt urgence : résoudre puis réarmer.','Changement format : adapter les guides et changer les magasins de cartons. Arrêt d\'urgence : résoudre puis réarmer.')">Valider</button>
+      <div class="feedback" id="fb29"></div>
+    </div>
+
+    <!-- Q30 -->
+    <div class="question-block" id="qb30">
+      <div class="question-label">Question 30 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">Le message « <strong>DEFAUT BARQUETTE DANS MACHINE</strong> » s\'affiche au démarrage. Quelle est l\'action correcte à effectuer ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q30" value="a"> Forcer le redémarrage du cycle</label>
+        <label class="option-item"><input type="radio" name="q30" value="b"> Vérifier la machine, retirer la barquette résiduelle, acquitter et relancer</label>
+        <label class="option-item"><input type="radio" name="q30" value="c"> Changer le carton</label>
+        <label class="option-item"><input type="radio" name="q30" value="d"> Appeler la maintenance immédiatement</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(30,'b','Correct ! Vérifier, retirer, acquitter, relancer.','Conduite à tenir : ouvrir le carter, retirer toute barquette résiduelle dans la zone, refermer, acquitter le défaut, relancer le cycle.')">Valider</button>
+      <div class="feedback" id="fb30"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ======== PARTIE 4 (ex-Partie 3) : Préparation de commandes ======== -->
+<div class="section-block">
+  <div class="section-header">
+    <div class="section-number">4</div>
+    <div class="section-title-block">
+      <h2>Préparation de commandes</h2>
+      <p>CP01 – Communiquer · CP03 – Préparer · CP04 – Piloter</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="context-box" style="margin-bottom:18px;">
+      <strong>Situation :</strong> Vous recevez des commandes pour produire des cartons de pots de crème (4 barquettes × 4 pots) ou des cartons de flacons cosmétiques (4 barquettes × 6 flacons).
+    </div>
+
+    <!-- Q31 -->
+    <div class="question-block" id="qb31">
+      <div class="question-label">Question 31 <span class="competence-tag">CP04</span></div>
+      <div class="question-text">L\'encartonneuse traite des cartons de pots. Chaque carton contient <strong>2 rangées de 4 barquettes</strong>. Chaque barquette contient <strong>4 pots</strong>. Combien y a-t-il de <strong>pots par carton</strong> ?</div>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q31-ans" placeholder="0" min="0">
+        <span class="unit-label">pots par carton</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(31,32,32,'Exact ! 2 x 4 x 4 = 32 pots/carton.','2 rangées x 4 barquettes x 4 pots = 32 pots par carton.')">Valider</button>
+      <div class="feedback" id="fb31"></div>
+    </div>
+
+    <!-- Q32 -->
+    <div class="question-block" id="qb32">
+      <div class="question-label">Question 32 <span class="competence-tag">CP04</span></div>
+      <div class="question-text">Le client commande <strong>200 cartons de pots conformes</strong>. Le taux de rebut habituel est de <strong>5 %</strong>. Combien de cartons faut-il <strong>lancer en production</strong> ?</div>
+      <div class="context-box"><strong>Astuce :</strong> Production = Besoin / 0,95.</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q32-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q32-ans" placeholder="0" min="0">
+        <span class="unit-label">cartons à produire</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(32,210,212,'Excellent ! 200/0,95 ≈ 211 cartons.','200 / 0,95 ≈ 210,5 → 211 cartons à produire.')">Valider</button>
+      <div class="feedback" id="fb32"></div>
+    </div>
+
+    <!-- Q33 -->
+    <div class="question-block" id="qb33">
+      <div class="question-label">Question 33 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Avant de lancer une production de <strong>200 cartons de pots</strong> (= 1600 barquettes pots = 6400 pots), vérifiez que le stock est suffisant.</div>
+      <table class="tbl vert" id="q33-table">
+        <thead><tr><th>Consommable</th><th>Besoin</th><th>Stock actuel</th><th>Suffisant ? (O/N)</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Cartons CART-POT-4x4</td>
+            <td>200</td>
+            <td>120</td>
+            <td><input type="text" class="q33-in" data-rep="N" placeholder="O ou N" maxlength="1" style="width:60px;text-align:center;text-transform:uppercase;"></td>
+          </tr>
+          <tr>
+            <td>Barquettes BARQ-POT-4</td>
+            <td>1600</td>
+            <td>85</td>
+            <td><input type="text" class="q33-in" data-rep="N" placeholder="O ou N" maxlength="1" style="width:60px;text-align:center;text-transform:uppercase;"></td>
+          </tr>
+          <tr>
+            <td>Ruban adhésif</td>
+            <td>~2 rouleaux</td>
+            <td>22 rouleaux</td>
+            <td><input type="text" class="q33-in" data-rep="O" placeholder="O ou N" maxlength="1" style="width:60px;text-align:center;text-transform:uppercase;"></td>
+          </tr>
+          <tr>
+            <td>Huile hydraulique ISO 46</td>
+            <td>0,5 L (appoint)</td>
+            <td>3 L</td>
+            <td><input type="text" class="q33-in" data-rep="O" placeholder="O ou N" maxlength="1" style="width:60px;text-align:center;text-transform:uppercase;"></td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="validate-btn" onclick="valQ33()">Valider</button>
+      <div class="feedback" id="fb33"></div>
+    </div>
+
+    <!-- Q34 -->
+    <div class="question-block" id="qb34">
+      <div class="question-label">Question 34 <span class="competence-tag">CP04</span></div>
+      <div class="question-text">La cadence nominale de l\'EB20 est de <strong>70 cartons/heure</strong>. Combien de <strong>minutes</strong> faudra-t-il pour produire un lot de <strong>140 cartons</strong> ?</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q34-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q34-ans" placeholder="0" min="0" step="0.1">
+        <span class="unit-label">minutes</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(34,118,122,'Correct ! 140/70 = 2h = 120 min.','140 / 70 = 2 heures = 120 minutes.')">Valider</button>
+      <div class="feedback" id="fb34"></div>
+    </div>
+
+    <!-- Q35 -->
+    <div class="question-block" id="qb35">
+      <div class="question-label">Question 35 <span class="competence-tag">CP01</span></div>
+      <div class="question-text">Rédigez une <strong>fiche de demande d\'approvisionnement urgent</strong> pour les articles manquants identifiés.</div>
+      <div class="bon-cmd">
+        <h4>Demande d\'approvisionnement urgent</h4>
+        <div class="form-row">
+          <div class="form-group"><label>Date</label><input type="text" id="q35-date" placeholder="JJ/MM/AAAA"></div>
+          <div class="form-group"><label>N° de commande</label><input type="text" id="q35-cmd" placeholder="Ex : CC-2024-15"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Article 1 – Référence</label><input type="text" id="q35-ref1" placeholder="Référence..."></div>
+          <div class="form-group"><label>Quantité</label><input type="text" id="q35-qty1" placeholder="..."></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Article 2 – Référence</label><input type="text" id="q35-ref2" placeholder="Référence..."></div>
+          <div class="form-group"><label>Quantité</label><input type="text" id="q35-qty2" placeholder="..."></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Urgence</label><select id="q35-urgence"><option value="">Sélectionner...</option><option value="normale">Normale</option><option value="urgent">Urgent</option><option value="tres-urgent">Très urgent</option></select></div>
+          <div class="form-group"><label>Motif</label><input type="text" id="q35-motif" placeholder="Motif..."></div>
+        </div>
+      </div>
+      <button class="validate-btn" onclick="valQ35()">Valider la fiche</button>
+      <div class="feedback" id="fb35"></div>
+    </div>
+
+    <!-- Q36 -->
+    <div class="question-block" id="qb36">
+      <div class="question-label">Question 36 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Le fournisseur propose les cartons à <strong>0,80 € HT pièce</strong>. TVA <strong>20 %</strong>. Calculez le <strong>montant TTC</strong> d\'une commande de <strong>2 530 cartons</strong>.</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q36-calc" rows="2" placeholder="HT = ...&#10;TTC = ..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q36-ans" placeholder="0" min="0" step="0.01">
+        <span class="unit-label">€ TTC</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(36,2428,2430,'Correct ! HT=2024 €. TTC=2024x1,20=2428,80 €.','HT = 2530 x 0,80 = 2024 €. TTC = 2024 x 1,20 = 2428,80 €.')">Valider</button>
+      <div class="feedback" id="fb36"></div>
+    </div>
+
+    <!-- Q37 -->
+    <div class="question-block" id="qb37">
+      <div class="question-label">Question 37 <span class="competence-tag">CP04</span></div>
+      <div class="question-text">Calculez le nombre de <strong>barquettes de flacons</strong> nécessaire pour produire <strong>140 cartons de flacons</strong>. Chaque carton contient 2 rangées de 4 barquettes de 6 flacons.</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q37-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q37-ans" placeholder="0" min="0">
+        <span class="unit-label">barquettes</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(37,1118,1122,'Correct ! 140 cartons x 2 x 4 = 1120 barquettes.','140 x (2x4) = 140 x 8 = 1120 barquettes de flacons nécessaires.')">Valider</button>
+      <div class="feedback" id="fb37"></div>
+    </div>
+
+    <!-- Q38 -->
+    <div class="question-block" id="qb38">
+      <div class="question-label">Question 38 <span class="competence-tag">CP04</span></div>
+      <div class="question-text">Trois nouvelles commandes arrivent :</div>
+      <div class="context-box">
+        - Cmd A : <strong>80 cartons pots</strong><br>
+        - Cmd B : <strong>120 cartons flacons</strong><br>
+        - Cmd C : <strong>60 cartons pots</strong><br>
+        Stock cartons pots : 200. Stock cartons flacons : 200. <strong>Toutes les commandes peuvent-elles être honorées ? Sinon combien manque-t-il en cartons pots ?</strong>
+      </div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Cartons pots manquants (0 si tout OK) :</div>
+      <textarea class="text-input" id="q38-calc" rows="3" placeholder="Cmd pots = A + C = ...&#10;Stock - besoin = ..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q38-ans" placeholder="0" min="0">
+        <span class="unit-label">cartons pots manquants</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(38,0,0,'Excellent ! Pots = 80+60 = 140 ≤ 200, donc 0 manquant. Flacons 120 ≤ 200 OK aussi.','Pots = 80+60=140 ≤ 200 → 0 manquant. Flacons = 120 ≤ 200 → OK. Toutes les commandes peuvent être honorées.')">Valider</button>
+      <div class="feedback" id="fb38"></div>
+    </div>
+
+    <!-- Q39 -->
+    <div class="question-block" id="qb39">
+      <div class="question-label">Question 39 <span class="competence-tag">CP01</span></div>
+      <div class="question-text">Quelles informations devez-vous renseigner dans le <strong>document de suivi de production</strong> ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q39" value="a"> Le nom du chauffeur de livraison</label>
+        <label class="option-item"><input type="checkbox" name="q39" value="b"> Le nombre de cartons produits</label>
+        <label class="option-item"><input type="checkbox" name="q39" value="c"> Les anomalies ou défauts constatés</label>
+        <label class="option-item"><input type="checkbox" name="q39" value="d"> Le numéro et la date de la commande</label>
+        <label class="option-item"><input type="checkbox" name="q39" value="e"> Les consommables utilisés (cartons, ruban)</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(39,['b','c','d','e'],'Parfait !','Informations : nb cartons, anomalies, n°/date commande, consommables utilisés.')">Valider</button>
+      <div class="feedback" id="fb39"></div>
+    </div>
+
+    <!-- Q40 -->
+    <div class="question-block" id="qb40">
+      <div class="question-label">Question 40 <span class="competence-tag">CP01</span></div>
+      <div class="question-text">Pour la <strong>traçabilité</strong> des cartons (rappel produit éventuel), quel format de <strong>numéro de lot</strong> respecte les bonnes pratiques ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q40" value="a"> Lot1 (numéro arbitraire)</label>
+        <label class="option-item"><input type="radio" name="q40" value="b"> 2024-15 (uniquement n° de commande)</label>
+        <label class="option-item"><input type="radio" name="q40" value="c"> EB20-20240315-P3-L01 (machine + date + poste + lot)</label>
+        <label class="option-item"><input type="radio" name="q40" value="d"> Le nom de l\'opérateur suffit</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(40,'c','Correct !','Le n° de lot doit identifier machine (EB20), date (20240315), poste (P3), séquence (L01). Indispensable pour traçabilité et rappels produits.')">Valider</button>
+      <div class="feedback" id="fb40"></div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- FINAL -->
+<div class="final-section" id="final-section" style="display:none;">
+  <h2>🎓 Récapitulatif du TP</h2>
+  <p style="color:#555;font-size:.93rem;">Évaluation par compétences :</p>
+  <div id="comp-eval-container"><p style="color:#aaa;font-size:.88rem;text-align:center;padding:12px;">Renseignez votre identité puis cliquez sur «&nbsp;Voir mon évaluation&nbsp;».</p></div>
+
+  <div style="background:var(--bleu-clair);border-radius:10px;padding:16px 20px;margin:18px 0;text-align:left;font-size:.88rem;line-height:1.8;">
+    <strong style="color:var(--bleu-fonce);">📌 Comment envoyer votre copie en 2 étapes :</strong><br>
+    <span style="color:#333;">
+      <b>Étape 1 —</b> Cliquez sur <em>« 📄 Télécharger ma correction en PDF »</em> pour sauvegarder votre fichier PDF.<br>
+      <b>Étape 2 —</b> Cliquez sur <em>« 📤 Envoyer au professeur »</em> : le dossier de votre classe s'ouvre → déposez-y le fichier PDF.
+    </span>
+  </div>
+
+  <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:6px;">
+    <button class="send-btn" style="background:linear-gradient(135deg,var(--bleu-fonce),var(--bleu));" onclick="telechargerPDF()">📄 Télécharger ma correction en PDF</button>
+    <button class="send-btn" id="send-btn" onclick="ouvrirDepot()">📤 Envoyer au professeur</button>
+  </div>
+  <div id="send-status"></div>
+</div>
+
+<div style="text-align:center;margin-top:22px;">
+  <button onclick="showFinal()" style="padding:12px 28px;background:var(--bleu-fonce);color:#fff;border:none;border-radius:8px;font-family:'Barlow',sans-serif;font-size:.98rem;font-weight:700;cursor:pointer;">
+    📊 Voir mon évaluation &amp; envoyer
+  </button>
+</div>
+
+</div><!-- /container -->
+
+<script>
+// ====== TIMER ======
+const DUREE = 2 * 3600;
+let secondes = DUREE;
+let timerPaused = false;
+const timerEl = document.getElementById('timer');
+let timerInterval = setInterval(() => {
+  if (timerPaused) return;
+  secondes--;
+  if (secondes < 0) { secondes = 0; clearInterval(timerInterval); }
+  let h = Math.floor(secondes / 3600);
+  let m = Math.floor((secondes % 3600) / 60);
+  let s = secondes % 60;
+  timerEl.textContent = h + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  if (secondes < 900) timerEl.classList.add('urgent');
+}, 1000);
+
+function togglePause() {
+  timerPaused = !timerPaused;
+  const btn = document.getElementById('pause-btn');
+  if (timerPaused) {
+    btn.textContent = '▶';
+    btn.title = 'Reprendre le chronometre';
+    btn.style.background = 'rgba(255,204,0,0.4)';
+    timerEl.style.opacity = '0.5';
+  } else {
+    btn.textContent = '⏸';
+    btn.title = 'Mettre en pause';
+    btn.style.background = 'rgba(255,255,255,0.25)';
+    timerEl.style.opacity = '1';
+  }
+}
+
+// ====== TRACKING COMPORTEMENTAL ======
+const tpStartTime = Date.now();
+let keyCount = 0;
+let pasteCount = 0;
+let pasteDetails = [];
+let keyActiveMs = 0;
+let keyLastStart = null;
+let inactiveMs = 0;
+let inactiveLastStart = null;
+const INACTIVITY_THRESHOLD = 30000;
+let inactivityTimer = null;
+const qTimestamps = {};
+
+document.addEventListener('keydown', () => {
+  if (!keyLastStart) keyLastStart = Date.now();
+  resetInactivity();
+});
+document.addEventListener('keyup', () => {
+  keyCount++;
+  if (keyLastStart) { keyActiveMs += Date.now() - keyLastStart; keyLastStart = null; }
+  resetInactivity();
+});
+document.addEventListener('paste', (e) => {
+  pasteCount++;
+  const target = e.target;
+  let qid = '';
+  const block = target ? target.closest('[id^="qb"]') : null;
+  if (block) qid = block.id.replace('qb','Q');
+  const heure = new Date().toLocaleTimeString('fr-FR');
+  pasteDetails.push({ zone: qid||'zone inconnue', heure });
+  resetInactivity();
+});
+
+function resetInactivity() {
+  if (inactiveLastStart) {
+    inactiveMs += Date.now() - inactiveLastStart;
+    inactiveLastStart = null;
+  }
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(() => {
+    inactiveLastStart = Date.now();
+  }, INACTIVITY_THRESHOLD);
+}
+resetInactivity();
+
+function recordQTime(id) {
+  const now = Date.now();
+  if (!qTimestamps['q'+id]) qTimestamps['q'+id] = { start: tpStartTime };
+  qTimestamps['q'+id].validated = now;
+  qTimestamps['q'+id].seconds = Math.round((now - qTimestamps['q'+id].start) / 1000);
+}
+
+function fmtDuration(ms) {
+  if (ms < 0) ms = 0;
+  const tot = Math.round(ms / 1000);
+  const h = Math.floor(tot/3600);
+  const m = Math.floor((tot%3600)/60);
+  const s = tot%60;
+  if (h > 0) return h+'h '+String(m).padStart(2,'0')+'min '+String(s).padStart(2,'0')+'s';
+  if (m > 0) return m+'min '+String(s).padStart(2,'0')+'s';
+  return s+'s';
+}
+
+function getTrackingStats() {
+  const totalMs = Date.now() - tpStartTime;
+  let keyMs = keyActiveMs + (keyLastStart ? Date.now()-keyLastStart : 0);
+  let inactMs = inactiveMs + (inactiveLastStart ? Date.now()-inactiveLastStart : 0);
+  return {
+    totalMs, keyMs, inactMs, keyCount, pasteCount, pasteDetails,
+    tempsPasseElapsed: DUREE - secondes,
+  };
+}
+
+// ====== SCORE ======
+const scores = {};
+const qComp = {
+  q1:'CP05',
+  q2:'CP03',
+  q3:'CP05',
+  q4:'CP05',
+  q5:'CP03',
+  q6:'CP05',
+  q7:'CP05',
+  q8:'CP03',
+  q9:'CP05',
+  q10:'CP05',
+  q11:'CP06',
+  q12:'CP06',
+  q13:'CP05',
+  q14:'CP08',
+  q15:'CP06',
+  q16:'CP08',
+  q17:'CP08',
+  q18:'CP08',
+  q19:'CP01',
+  q20:'CP01',
+  q21:'CP02',
+  q22:'CP02',
+  q23:'CP02',
+  q24:'CP02',
+  q25:'CP02',
+  q26:'CP03',
+  q27:'CP03',
+  q28:'CP03',
+  q29:'CP02',
+  q30:'CP02',
+  q31:'CP04',
+  q32:'CP04',
+  q33:'CP03',
+  q34:'CP04',
+  q35:'CP01',
+  q36:'CP03',
+  q37:'CP04',
+  q38:'CP04',
+  q39:'CP01',
+  q40:'CP01'
+};
+const qTitres = ['',
+  'Planification maintenance',
+  'Calcul stock minimum securite',
+  'Analyse tableau de stock',
+  'Article le plus critique',
+  'Calcul commande cartons 5j',
+  'Calcul taux rotation',
+  'Frequences maintenance',
+  'Procedure reception',
+  'Actions fin de campagne',
+  'Calcul taux indispo',
+  'Calcul TRS simple',
+  'Calcul TRS complet (DxPxQ)',
+  'Calcul cadence reelle',
+  'Calcul perte production',
+  'Alarme defaut indexage',
+  'Cause racine 5M',
+  'Amelioration defaut poussee',
+  'Choix indicateurs KPI',
+  'Compte-rendu fin de poste',
+  'Email reclamation client',
+  'Role plateau d indexage',
+  'Dispositifs de securite',
+  'Fonction de la machine',
+  'Principe fermeture cartons',
+  'Types de barquettes',
+  'Consommables maintenance',
+  'Masse de la machine',
+  'Calcul autonomie ruban',
+  'Changement format + arret urgence',
+  'Diagnostic alarme barquette',
+  'Calcul pots par carton',
+  'Calcul commande avec rebut',
+  'Verification stock vs commande',
+  'Calcul duree production',
+  'Fiche approvisionnement urgent',
+  'Calcul montant TTC',
+  'Calcul barquettes flacons',
+  'Calcul prevision commandes',
+  'Informations suivi',
+  'Numero de lot tracabilite'];
+const corrections = ['',
+  '12600/490 = 25,7 jours (~26).',
+  '490x6=2940 x1,25 = 3675 cartons.',
+  'CART-POT-4x4 (120<500), BARQ-POT-4 (85<200), HUILE-ISO46 (3<10).',
+  'CART-POT-4x4 : sans carton de pots, arret immediat.',
+  '70x7x5=2450. A commander = 2450-120+200 = 2530.',
+  '96000/3200 = 30 rotations/an.',
+  'Controle quotidien poussoirs. Vidange hydraulique annuelle.',
+  'Verifier qty/ref, controler etat, MAJ stock, signaler ecarts.',
+  'Nettoyer poussiere, vider bacs, ranger consommables, consigner.',
+  '(18/1800)x100 = 1,00 %.',
+  'Theorique=70x7=490. TRS=(350/490)x100=71,4 %.',
+  'D=92,86 % ; P=92,3 % ; Q=97,6 % ; TRS=83,7 %.',
+  '280/4 = 70 cartons/h.',
+  '490 - 350 = 140 cartons perdus.',
+  'Plateau bloque/capteur defaillant - verifier, debloquer, acquitter.',
+  '5M : Materiel (poussoir/elevateur usé).',
+  'Maintenance preventive, controle quotidien, calibration capteurs.',
+  'KPI : Production, TRS, Taux rebut, Arrets.',
+  'Production, stock, anomalies, points d attention.',
+  'Email avec excuses, cause, action, compensation.',
+  'Positionner les cartons a chaque etape (formage, remplissage, fermeture).',
+  'Capteur carton, capteur fin ruban, carter securite, arret urgence.',
+  'Former, remplir et fermer cartons de barquettes (pots ou flacons).',
+  'Application de ruban adhesif (banderoleuse).',
+  'Barquettes 4 pots et 6 flacons.',
+  'Huile ISO46, ruban adhesif, filtres pneumatiques, joints.',
+  'Masse ~ 200 kg.',
+  '140 / 70 = 2 heures.',
+  'Adapter guides + magasins. Arret urgence : reamer.',
+  'Verifier, retirer barquette residuelle, acquitter, relancer.',
+  '2 x 4 x 4 = 32 pots/carton.',
+  '200 / 0,95 = 211 cartons.',
+  'Cartons:N, Barquettes:N, Ruban:O, Huile:O.',
+  '140 / 70 = 2 h = 120 minutes.',
+  'Fiche complete avec articles manquants.',
+  '2530 x 0,80 x 1,20 = 2428,80 EUR TTC.',
+  '140 x 8 = 1120 barquettes flacons.',
+  'Pots 80+60=140 OK; flacons 120 OK -> 0 manquant.',
+  'Nb cartons, anomalies, n/date, consommables.',
+  'EB20-AAAAMMJJ-Pn-Lnn (machine + date + poste + lot).'];
+
+function updateProgress() {
+  const done = Object.keys(scores).length;
+  const pts = Object.values(scores).reduce((a,b)=>a+b,0);
+  document.getElementById('progress-fill').style.width = (done/40*100)+'%';
+  document.getElementById('progress-text').textContent = done+' / 40 questions validees';
+  document.getElementById('score-display').textContent = pts+' / 40';
+  if(done>=10) document.getElementById('m1').classList.add('done');
+  if(done>=20) document.getElementById('m2').classList.add('done');
+  if(done>=30) document.getElementById('m3').classList.add('done');
+  if(done>=39) document.getElementById('m4').classList.add('done');
+  if(done>=40) document.getElementById('m5').classList.add('done');
+}
+
+// Compatibilite : setFB est un alias vers showFeedback (pour TP qui utilise showFeedback)
+function setFB(id, ok, msgOk, msgNok) {
+  scores['q'+id] = ok ? 1 : 0;
+  if (typeof showFeedback === 'function') {
+    showFeedback(id, ok, ok ? msgOk : msgNok);
+  } else {
+    const fb = document.getElementById('fb'+id);
+    if (fb) { fb.className='feedback show '+(ok?'ok':'nok'); fb.innerHTML=(ok?'✅ ':'❌ ')+(ok?msgOk:msgNok); }
+  }
+  updateProgress();
+  if (typeof recordQTime === 'function') recordQTime(id);
+}
+
+function showFeedback(id, ok, msg) {
+  const fb = document.getElementById('fb'+id);
+  fb.className = 'feedback show ' + (ok ? 'ok' : 'nok');
+  fb.innerHTML = (ok ? '✅ ' : '❌ ') + msg;
+}
+
+// ====== VALIDATION RADIO ======
+function valRadio(id, correct, msgOk, msgNok) {
+  if (scores['q'+id] !== undefined) return;
+  const sel = document.querySelector('input[name="q'+id+'"]:checked');
+  if (!sel) { showFeedback(id, false, 'Veuillez selectionner une reponse.'); return; }
+  const ok = sel.value === correct;
+  scores['q'+id] = ok ? 1 : 0;
+  document.querySelectorAll('input[name="q'+id+'"]').forEach(r => {
+    const item = r.closest('.option-item');
+    if (r.value === correct) item.classList.add('correct');
+    else if (r.checked && !ok) item.classList.add('incorrect');
+    r.disabled = true;
+  });
+  showFeedback(id, ok, ok ? msgOk : '❗ ' + msgNok);
+  document.querySelector('#qb'+id+' .validate-btn').disabled = true;
+  recordQTime(id);
+  updateProgress();
+}
+
+// ====== VALIDATION CHECKBOX ======
+function valCheckbox(id, corrects, msgOk, msgNok) {
+  if (scores['q'+id] !== undefined) return;
+  const checked = Array.from(document.querySelectorAll('input[name="q'+id+'"]:checked')).map(c=>c.value);
+  const ok = corrects.length === checked.length && corrects.every(v=>checked.includes(v));
+  scores['q'+id] = ok ? 1 : 0;
+  document.querySelectorAll('input[name="q'+id+'"]').forEach(r => {
+    const item = r.closest('.option-item');
+    if (corrects.includes(r.value)) item.classList.add('correct');
+    else if (r.checked) item.classList.add('incorrect');
+    r.disabled = true;
+  });
+  showFeedback(id, ok, ok ? msgOk : '❗ ' + msgNok);
+  document.querySelector('#qb'+id+' .validate-btn').disabled = true;
+  recordQTime(id);
+  updateProgress();
+}
+
+// ====== VALIDATION DOUBLE QCM ======
+function valDouble(id, nameA, corrA, nameB, corrB, msgOk, msgNok) {
+  if (scores['q'+id] !== undefined) return;
+  const selA = document.querySelector('input[name="'+nameA+'"]:checked');
+  const selB = document.querySelector('input[name="'+nameB+'"]:checked');
+  if (!selA || !selB) { showFeedback(id, false, 'Veuillez repondre aux deux questions.'); return; }
+  const ok = selA.value === corrA && selB.value === corrB;
+  scores['q'+id] = ok ? 1 : 0;
+  [nameA, nameB].forEach((name, ni) => {
+    const corr = ni===0 ? corrA : corrB;
+    document.querySelectorAll('input[name="'+name+'"]').forEach(r => {
+      const item = r.closest('.option-item');
+      if (r.value === corr) item.classList.add('correct');
+      else if (r.checked) item.classList.add('incorrect');
+      r.disabled = true;
+    });
+  });
+  showFeedback(id, ok, ok ? msgOk : '❗ ' + msgNok);
+  document.querySelector('#qb'+id+' .validate-btn').disabled = true;
+  recordQTime(id);
+  updateProgress();
+}
+
+// ====== VALIDATION NUMERIQUE ======
+function valNumber(id, min, max, msgOk, msgNok) {
+  if (scores['q'+id] !== undefined) return;
+  const inp = document.getElementById('q'+id+'-ans');
+  const val = parseFloat(inp.value);
+  if (isNaN(val)) { showFeedback(id, false, 'Veuillez entrer une valeur numerique.'); return; }
+  const ok = val >= min && val <= max;
+  scores['q'+id] = ok ? 1 : 0;
+  inp.classList.add(ok ? 'correct' : 'incorrect');
+  showFeedback(id, ok, ok ? msgOk : '❗ ' + msgNok);
+  document.querySelector('#qb'+id+' .validate-btn').disabled = true;
+  recordQTime(id);
+  updateProgress();
+}
+
+// ====== VALIDATION TEXTE (mots-cles) ======
+function valTexte(id, keywords, minHits, msgOk, msgNok) {
+  if (scores['q'+id] !== undefined) return;
+  const txt = (document.getElementById('q'+id+'-ans').value || '').toLowerCase();
+  if (txt.trim().length < 20) { showFeedback(id, false, 'Reponse trop courte. Developpez votre reponse.'); return; }
+  const hits = keywords.filter(k => txt.includes(k)).length;
+  const ok = hits >= minHits;
+  scores['q'+id] = ok ? 1 : 0;
+  document.getElementById('q'+id+'-ans').classList.add(ok ? 'correct' : 'incorrect');
+  showFeedback(id, ok, ok ? msgOk : '❗ ' + msgNok);
+  document.querySelector('#qb'+id+' .validate-btn').disabled = true;
+  recordQTime(id);
+  updateProgress();
+}
+
+// ====== VALIDATION Q5 (tableau) ======
+function valQ5() {
+  if (scores['q5'] !== undefined) return;
+  const inputs = document.querySelectorAll('.q5-in');
+  let ok = true;
+  inputs.forEach(inp => {
+    const val = inp.value.toLowerCase().trim();
+    const rep = inp.dataset.rep.toLowerCase();
+    if (!val.includes(rep)) { inp.classList.add('incorrect'); ok = false; }
+    else inp.classList.add('correct');
+  });
+  scores['q5'] = ok ? 1 : 0;
+  showFeedback(5, ok, ok ? 'Parfait ! Caracteristiques des barquettes correctement identifiees.' : '❗ Verifiez vos reponses. Consultez le dossier produit ERM pour les valeurs exactes.');
+  document.querySelector('#qb5 .validate-btn').disabled = true;
+  recordQTime(5);
+  updateProgress();
+}
+
+// ====== VALIDATION Q12 (tableau O/N) ======
+function valQ12() {
+  if (scores['q12'] !== undefined) return;
+  const inputs = document.querySelectorAll('.q12-in');
+  let ok = true;
+  inputs.forEach(inp => {
+    const val = inp.value.toUpperCase().trim();
+    const rep = inp.dataset.rep.toUpperCase();
+    if (val !== rep) { inp.classList.add('incorrect'); ok = false; }
+    else inp.classList.add('correct');
+  });
+  scores['q12'] = ok ? 1 : 0;
+  showFeedback(12, ok, ok ? 'Parfait ! Barquettes 4 alveoles : N (80<1600), Cartons pots : N (45<200), Barquettes 6 alveoles : O (non utilise pour cette production).' : '❗ Verifiez : comparez le besoin a la disponibilite pour chaque article. Barquettes 4 alveoles besoin = 200 cartons × 2 rangees × 4 barquettes = 1600 pieces.');
+  document.querySelector('#qb12 .validate-btn').disabled = true;
+  recordQTime(12);
+  updateProgress();
+}
+
+// ====== VALIDATION Q13 (fiche appro) ======
+function valQ13() {
+  if (scores['q13'] !== undefined) return;
+  const date = document.getElementById('q13-date').value.trim();
+  const ref1 = document.getElementById('q13-ref1').value.trim().toLowerCase();
+  const qty1 = document.getElementById('q13-qty1').value.trim();
+  const urgence = document.getElementById('q13-urgence').value;
+  const ok = date.length > 0 && ref1.length > 2 && qty1.length > 0 && urgence !== '';
+  scores['q13'] = ok ? 1 : 0;
+  showFeedback(13, ok, ok ? 'Fiche d approvisionnement valide ! Les champs obligatoires sont renseignes : date, article(s) manquant(s), quantite(s) et niveau d urgence.' : '❗ Completez tous les champs obligatoires : date, reference article 1, quantite et niveau d urgence.');
+  document.querySelector('#qb13 .validate-btn').disabled = true;
+  recordQTime(13);
+  updateProgress();
+}
+
+// ====== VALIDATION Q18 (radio + texte) ======
+function valQ18() {
+  if (scores['q18'] !== undefined) return;
+  const selA = document.querySelector('input[name="q18a"]:checked');
+  const proc = (document.getElementById('q18-proc').value || '').toLowerCase();
+  if (!selA) { showFeedback(18, false, 'Veuillez selectionner la cause probable.'); return; }
+  const okA = selA.value === 'b';
+  const okB = proc.length >= 20 && (proc.includes('plateau') || proc.includes('index') || proc.includes('reposition') || proc.includes('f1') || proc.includes('rearm'));
+  const ok = okA && okB;
+  scores['q18'] = ok ? 1 : 0;
+  document.querySelectorAll('input[name="q18a"]').forEach(r => {
+    const item = r.closest('.option-item');
+    if (r.value === 'b') item.classList.add('correct');
+    else if (r.checked) item.classList.add('incorrect');
+    r.disabled = true;
+  });
+  document.getElementById('q18-proc').classList.add(okB ? 'correct' : 'incorrect');
+  showFeedback(18, ok, ok ? 'Correct ! Defaut indexage plateau : le plateau n est pas en position initiale. Procedure : repositionner le plateau manuellement, appuyer sur REARM, puis utiliser la touche F1 pour relancer l indexage.' : '❗ Cause correcte : le plateau n est pas en position. Procedure : repositionner le plateau et relancer un indexage (REARM + F1).');
+  document.querySelector('#qb18 .validate-btn').disabled = true;
+  recordQTime(18);
+  updateProgress();
+}
+
+// ====== RECUPERER LES REPONSES ======
+function valQ15(){
+  const v=document.querySelector('input[name="q15a"]:checked');
+  if(!v){alert('Selectionnez une cause.');return;}
+  const proc=document.getElementById('q15-proc').value.toLowerCase();
+  const ok1=v.value==='b';
+  const ok2=proc.length>30&&(proc.includes('arr')||proc.includes('veri')||proc.includes('signal')||proc.includes('debloqu')||proc.includes('acquit')||proc.includes('plateau'));
+  document.querySelectorAll('input[name="q15a"]').forEach(inp=>{
+    if(inp.value==='b') inp.closest('.option-item').classList.add('correct');
+    else if(!ok1&&inp.value===v.value) inp.closest('.option-item').classList.add('incorrect');
+  });
+  document.getElementById('q15-proc').classList.add(ok2?'correct':'incorrect');
+  setFB(15,ok1&&ok2,'Correct ! Plateau bloque - arret, verification, deblocage, acquittement.',
+    'Cause : plateau bloque ou capteur defaillant. Procedure : arret, verification, deblocage, acquittement, relance.');
+}
+function valQ33(){
+  const inputs=document.querySelectorAll('.q33-in'); let ok=true;
+  inputs.forEach(inp=>{
+    const v=inp.value.trim().toUpperCase();
+    if(v!==inp.dataset.rep){ok=false;inp.classList.add('incorrect');}else inp.classList.add('correct');
+  });
+  setFB(33,ok,'Parfait ! Cartons N, Barquettes N, Ruban O, Huile O.','Cartons 120<200=N; Barquettes 85<1600=N; Ruban 22>2=O; Huile 3>0,5=O.');
+}
+function valQ35(){
+  const ok=document.getElementById('q35-date').value.trim().length>0
+    &&document.getElementById('q35-cmd').value.trim().length>0
+    &&document.getElementById('q35-ref1').value.trim().length>2
+    &&document.getElementById('q35-qty1').value.trim().length>0
+    &&document.getElementById('q35-ref2').value.trim().length>2
+    &&document.getElementById('q35-qty2').value.trim().length>0
+    &&document.getElementById('q35-urgence').value!==''
+    &&document.getElementById('q35-motif').value.trim().length>5;
+  setFB(35,ok,'Fiche complete !','Remplissez tous les champs : date, n cmd, 2 articles (CART-POT et BARQ-POT typiquement), qty, urgence, motif.');
+}
+
+function getAns(n){
+  try{
+    if(n===1){return 'Calcul: '+(document.getElementById('q1-calc').value||'-')+' => '+(document.getElementById('q1-ans').value||'-')+' jours';}
+    if(n===2){return 'Calcul: '+(document.getElementById('q2-calc').value||'-')+' => '+(document.getElementById('q2-ans').value||'-')+' cartons';}
+    if(n===3){return Array.from(document.querySelectorAll('input[name="q3"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===4){const v=document.querySelector('input[name="q4"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+    if(n===5){return 'Calcul: '+(document.getElementById('q5-calc').value||'-')+' => '+(document.getElementById('q5-ans').value||'-')+' cartons';}
+    if(n===6){return 'Calcul: '+(document.getElementById('q6-calc').value||'-')+' => '+(document.getElementById('q6-ans').value||'-')+' rot/an';}
+    if(n===7){const v1=document.querySelector('input[name="q7a"]:checked');const v2=document.querySelector('input[name="q7b"]:checked');return (v1?v1.closest('.option-item').textContent.trim():'-')+' | '+(v2?v2.closest('.option-item').textContent.trim():'-');}
+    if(n===8){return Array.from(document.querySelectorAll('input[name="q8"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===9){return document.getElementById('q9-ans').value||'-';}
+    if(n===10){return 'Calcul: '+(document.getElementById('q10-calc').value||'-')+' => '+(document.getElementById('q10-ans').value||'-')+' %';}
+    if(n===11){return 'Calcul: '+(document.getElementById('q11-calc').value||'-')+' => '+(document.getElementById('q11-ans').value||'-')+' %';}
+    if(n===12){return 'Calcul: '+(document.getElementById('q12-calc').value||'-')+' => '+(document.getElementById('q12-ans').value||'-')+' %';}
+    if(n===13){return 'Calcul: '+(document.getElementById('q13-calc').value||'-')+' => '+(document.getElementById('q13-ans').value||'-')+' cart/h';}
+    if(n===14){return 'Calcul: '+(document.getElementById('q14-calc').value||'-')+' => '+(document.getElementById('q14-ans').value||'-')+' cartons';}
+    if(n===15){const v=document.querySelector('input[name="q15a"]:checked');return (v?v.closest('.option-item').textContent.trim():'-')+' | Procedure: '+document.getElementById('q15-proc').value;}
+    if(n===16){const v=document.querySelector('input[name="q16"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+    if(n===17){return document.getElementById('q17-ans').value||'-';}
+    if(n===18){return Array.from(document.querySelectorAll('input[name="q18"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===19){return document.getElementById('q19-ans').value||'-';}
+    if(n===20){return document.getElementById('q20-ans').value||'-';}
+    if(n===21){const v=document.querySelector('input[name="q21"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+    if(n===22){return Array.from(document.querySelectorAll('input[name="q22"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===23){const v=document.querySelector('input[name="q23"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+    if(n===24){const v=document.querySelector('input[name="q24"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+    if(n===25){return Array.from(document.querySelectorAll('input[name="q25"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===26){return Array.from(document.querySelectorAll('input[name="q26"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===27){return (document.getElementById('q27-ans').value||'-')+' kg';}
+    if(n===28){return 'Calcul: '+(document.getElementById('q28-calc').value||'-')+' => '+(document.getElementById('q28-ans').value||'-')+' h';}
+    if(n===29){const v1=document.querySelector('input[name="q29a"]:checked');const v2=document.querySelector('input[name="q29b"]:checked');return (v1?v1.closest('.option-item').textContent.trim():'-')+' | '+(v2?v2.closest('.option-item').textContent.trim():'-');}
+    if(n===30){const v=document.querySelector('input[name="q30"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+    if(n===31){return (document.getElementById('q31-ans').value||'-')+' pots/carton';}
+    if(n===32){return 'Calcul: '+(document.getElementById('q32-calc').value||'-')+' => '+(document.getElementById('q32-ans').value||'-')+' cartons';}
+    if(n===33){return Array.from(document.querySelectorAll('.q33-in')).map(i=>i.value||'?').join(' / ');}
+    if(n===34){return 'Calcul: '+(document.getElementById('q34-calc').value||'-')+' => '+(document.getElementById('q34-ans').value||'-')+' min';}
+    if(n===35){return 'Date:'+document.getElementById('q35-date').value+' Cmd:'+document.getElementById('q35-cmd').value+' Art1:'+document.getElementById('q35-ref1').value+'('+document.getElementById('q35-qty1').value+') Art2:'+document.getElementById('q35-ref2').value+'('+document.getElementById('q35-qty2').value+') Urgence:'+document.getElementById('q35-urgence').value;}
+    if(n===36){return 'Calcul: '+(document.getElementById('q36-calc').value||'-')+' => '+(document.getElementById('q36-ans').value||'-')+' EUR TTC';}
+    if(n===37){return 'Calcul: '+(document.getElementById('q37-calc').value||'-')+' => '+(document.getElementById('q37-ans').value||'-')+' barquettes';}
+    if(n===38){return 'Calcul: '+(document.getElementById('q38-calc').value||'-')+' => '+(document.getElementById('q38-ans').value||'-')+' cartons manquants';}
+    if(n===39){return Array.from(document.querySelectorAll('input[name="q39"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===40){const v=document.querySelector('input[name="q40"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+  }catch(e){return '-';}return '-';
+}
+
+// showFinal remplacée par version Pronote (voir bas du fichier)
+
+// ====== GENERER PDF ======
+function genPDF(nom, prenom, classe, pts, dateStr, stats) {
+  const W=595, H=842, ML=36, MR=36, MT=820;
+  const pages=[{parts:[]}];
+  let y=MT;
+
+  function newPage(){pages.push({parts:[]});y=MT;}
+  function cur(){return pages[pages.length-1];}
+  function checkY(need){if(y-need<40)newPage();}
+  function esc(s){return String(s||'').replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)').replace(/[^\x20-\x7E]/g,' ');}
+  function txt(s,x,yy,sz,bold,r,g,b){
+    const fn=bold?'F2':'F1';
+    cur().parts.push(`BT /${fn} ${sz} Tf ${r} ${g} ${b} rg ${x} ${yy} Td (${esc(s)}) Tj ET`);
+  }
+  function filledRect(x,yy,w,h,r,g,b){cur().parts.push(`${r} ${g} ${b} rg ${x} ${yy-h} ${w} ${h} re f 0 0 0 rg`);}
+  function hLine(x1,yy,x2){cur().parts.push(`0.7 0.7 0.7 RG 0.5 w ${x1} ${yy} m ${x2} ${yy} l S 0 0 0 RG`);}
+  const CW=W-ML-MR;
+
+  function wrapLines(s,maxChars){
+    const words=String(s||'').split(' ');
+    const lines=[]; let cur2='';
+    for(const w of words){
+      if(((cur2?cur2+' ':'')+w).length<=maxChars){cur2=(cur2?cur2+' ':'')+w;}
+      else{if(cur2)lines.push(cur2);cur2=w;}
+    }
+    if(cur2)lines.push(cur2);
+    return lines.length?lines:[''];
+  }
+
+  function addTxt(s,sz,bold,r,g,b,indent){
+    sz=sz||10;indent=indent||0;
+    const maxChars=Math.floor((CW-indent)/(sz*0.52));
+    const lines=wrapLines(s,maxChars);
+    for(const l of lines){
+      checkY(sz+5);
+      txt(l,ML+indent,y,sz,bold||false,r||0,g||0,b||0);
+      y-=(sz+4);
+    }
+  }
+  function addSp(h){y-=(h||8);}
+  function addHLine(){checkY(8);hLine(ML,y,W-MR);y-=8;}
+
+  function addHeader2(s,r,g,b,fr,fg,fb){
+    checkY(20);
+    const h=16;
+    filledRect(ML,y-2,CW,h,r,g,b);
+    txt(s,ML+5,y+1,10,true,fr||1,fg||1,fb||1);
+    y-=(h+4);
+  }
+
+  function addTableRow(cells,widths,isHdr,isEven){
+    const rh=13;checkY(rh+2);
+    const rowY=y-2;
+    if(isHdr)filledRect(ML,rowY,CW,rh,0.17,0.37,0.59);
+    else if(isEven)filledRect(ML,rowY,CW,rh,0.94,0.96,0.97);
+    let x=ML;
+    cells.forEach((c,i)=>{
+      const s=String(c||'').substring(0,widths[i]>100?60:20);
+      txt(s,x+2,y,8,isHdr,isHdr?1:0,isHdr?1:0,isHdr?1:0);
+      x+=widths[i];
+    });
+    y-=rh;
+  }
+
+  newPage();
+  const headerH=28;
+  filledRect(ML,y-4,CW,headerH,0.17,0.37,0.59);
+  txt('TP - Encartonneuse ERMAFLEX EB20 - Lycee Vaucanson Grenoble',ML+6,y+10,10,true,1,1,1);
+  txt(nom.toUpperCase()+' '+prenom+' | Classe: '+classe+' | Date: '+dateStr,ML+6,y-1,9,false,0.85,0.95,1);
+  y-=(headerH+8);
+
+  checkY(30);
+  filledRect(ML,y-4,CW,26,0.93,0.97,0.93);
+  // Évaluation Pronote dans le PDF
+  const filiere2 = getFiliere(classe);
+  const ret2 = COMP_RETENUES[filiere2];
+  const cs2 = calcCompScores(filiere2);
+  const totalPts = ret2.reduce((s,c)=>{ const t=cs2.cT[c]||0; const ok=t>0?cs2.cS[c]:0; const pct=t>0?ok/t:0; return s+getPronoteNiveau(pct).pts; },0);
+  const maxPts = ret2.length * 6;
+  txt('EVALUATION PAR COMPETENCES PRONOTE | Filiere: '+filiere2+' | '+ret2.join(', ')+' | Total: '+totalPts+'/'+maxPts+' pts', ML+6, y+6, 8, true, 0.15,0.33,0.07);
+  const mention = ''; // supprimé - éval Pronote
+  // mention numérique supprimée
+  y-=36;addSp(4);
+
+  const cS={},cT={};
+  Object.keys(scores).forEach(qid=>{const c=qComp[qid];if(!cS[c]){cS[c]=0;cT[c]=0;}cS[c]+=scores[qid];cT[c]++;});
+  addHeader2('EVALUATION PAR COMPETENCES - CODE PRONOTE', 0.15,0.33,0.07);
+  const filiere3=getFiliere(classe);
+  const ret3=COMP_RETENUES[filiere3];
+  const cs3=calcCompScores(filiere3);
+  addTxt('Filiere : '+FILIERE_LABEL[filiere3], 9, true, 0.1,0.23,0.42);
+  addSp(3);
+  addTableRow(['Code','Competence evaluee','Score','Niveau Pronote','Points'],[35,155,45,100,CW-335],true);
+  let ev3=false;
+  ret3.forEach(c=>{
+    const t3=cs3.cT[c]||0; const ok3=t3>0?cs3.cS[c]:0;
+    const pct3=t3>0?ok3/t3:0; const niv3=getPronoteNiveau(pct3);
+    addTableRow([c, getCompLib(c,filiere3).substring(0,38), (t3>0?ok3+'/'+t3:'N/A'), niv3.label, niv3.pts+' pt'+(niv3.pts>1?'s':'')],[35,155,45,100,CW-335],false,ev3);
+    ev3=!ev3;
+  });
+  addSp(8);addHLine();addSp(4);
+
+  // Détail questions
+  addHeader2('DETAIL DES REPONSES - PARTIE 1 (Q1-Q10)', 0.18,0.48,0.27);
+  const wQ=[22,100,50,55,CW-227];
+  addTableRow(['N','Question','Comp.','Resultat','Reponse donnee'],wQ,true);
+  for(let i=1;i<=10;i++){
+    const ok=scores['q'+i];
+    const res=ok===undefined?'- N/R':(ok===1?'[OK] Juste':'[X] Faux');
+    addTableRow([i,qTitres[i],qComp['q'+i]||'-',res,getAns(i).substring(0,55)],wQ,false,i%2===0);
+  }
+  addSp(6);
+  addHeader2('DETAIL DES REPONSES - PARTIE 2 (Q11-Q20)', 0.18,0.48,0.27);
+  addTableRow(['N','Question','Comp.','Resultat','Reponse donnee'],wQ,true);
+  for(let i=11;i<=20;i++){
+    const ok=scores['q'+i];
+    const res=ok===undefined?'- N/R':(ok===1?'[OK] Juste':'[X] Faux');
+    addTableRow([i,qTitres[i],qComp['q'+i]||'-',res,getAns(i).substring(0,55)],wQ,false,i%2===0);
+  }
+  addSp(6);
+  addHeader2('DETAIL DES REPONSES - PARTIE 3 (Q21-Q30)', 0.18,0.48,0.27);
+  addTableRow(['N','Question','Comp.','Resultat','Reponse donnee'],wQ,true);
+  for(let i=21;i<=30;i++){
+    const ok=scores['q'+i];
+    const res=ok===undefined?'- N/R':(ok===1?'[OK] Juste':'[X] Faux');
+    addTableRow([i,qTitres[i],qComp['q'+i]||'-',res,getAns(i).substring(0,55)],wQ,false,i%2===0);
+  }
+  addSp(6);
+  addHeader2('DETAIL DES REPONSES - PARTIE 4 (Q31-Q40)', 0.18,0.48,0.27);
+  addTableRow(['N','Question','Comp.','Resultat','Reponse donnee'],wQ,true);
+  for(let i=31;i<=40;i++){
+    const ok=scores['q'+i];
+    const res=ok===undefined?'- N/R':(ok===1?'[OK] Juste':'[X] Faux');
+    addTableRow([i,qTitres[i],qComp['q'+i]||'-',res,getAns(i).substring(0,55)],wQ,false,i%2===0);
+  }
+  addSp(8); addHLine(); addSp(4);
+
+  // Corrections
+  addHeader2('REPONSES ATTENDUES (CORRECTION)', 0.17,0.37,0.59);
+  for(let i=1;i<=40;i++){
+    checkY(14);
+    const ok=scores['q'+i];
+    const okTxt=ok===undefined?'[N/R]':(ok===1?'[OK]':'[X] ');
+    addTxt('Q'+i+' '+okTxt+' '+qTitres[i], 9, true, 0.17,0.37,0.59, 0);
+    addTxt('Attendu: '+corrections[i], 8, false, 0.2,0.5,0.2, 8);
+    const rep=getAns(i);
+    if(rep&&rep!=='-')addTxt('Repondu: '+rep.substring(0,120), 8, false, 0.3,0.3,0.3, 8);
+    addSp(3);
+  }
+
+  if(stats){
+    addHeader2('INDICATEURS DE COMPORTEMENT DURANT LE TP',0.17,0.37,0.59);
+    const totalStr=fmtDuration(stats.totalMs);
+    const keyStr=fmtDuration(stats.keyMs);
+    const inactStr=fmtDuration(stats.inactMs);
+    const chronoSec=stats.tempsPasseElapsed;
+    const hh=Math.floor(chronoSec/3600);
+    const mm=Math.floor((chronoSec%3600)/60);
+    const ss=chronoSec%60;
+    const chronoStr=hh+'h '+String(mm).padStart(2,'0')+'min '+String(ss).padStart(2,'0')+'s';
+    addTxt('Temps total passe sur le TP : '+totalStr+'  |  Temps chronometre ecoule : '+chronoStr,9,true,0,0,0,0);
+    addTxt('Temps actif au clavier : '+keyStr+'  |  Temps d inactivite detecte (>30s) : '+inactStr,9,false,0.3,0.3,0.3,0);
+    addSp(4);
+    addTxt('Nombre de frappes clavier : '+stats.keyCount,9,false,0,0,0,0);
+    addSp(2);
+    if(stats.pasteCount===0){
+      addTxt('Copier-coller : aucun coller detecte durant le TP',9,false,0.18,0.48,0.27,0);
+    } else {
+      addTxt('Copier-coller detecte : '+stats.pasteCount+' occurrence(s)',9,true,0.7,0.1,0.1,0);
+      stats.pasteDetails.forEach(p=>{addTxt('  - Coller dans '+p.zone+' a '+p.heure,8,false,0.5,0.1,0.1,8);});
+    }
+    addSp(6);
+    addHeader2('HORODATAGE DES VALIDATIONS PAR QUESTION',0.18,0.48,0.27);
+    const wT=[22,85,65,65,CW-237];
+    addTableRow(['N','Question','Heure valid.','Tps ecoule','Observations'],wT,true);
+    let rowEven=false;
+    for(let i=1;i<=40;i++){
+      const qt=qTimestamps['q'+i];
+      let heureStr='-',dureeStr='-',obs='';
+      if(qt&&qt.validated){
+        const d=new Date(qt.validated);
+        heureStr=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
+        dureeStr=fmtDuration(qt.seconds*1000);
+        if(qt.seconds<8)obs='[!] Tres rapide';
+        else if(qt.seconds>600)obs='Long (>10min)';
+      } else {obs='Non repondu';}
+      addTableRow([i,qTitres[i].substring(0,30),heureStr,dureeStr,obs],wT,false,rowEven);
+      rowEven=!rowEven;
+    }
+    addSp(8);
+  }
+
+  pages.forEach((p,pi)=>{
+    p.parts.push(`0.6 0.6 0.6 rg`);
+    p.parts.push(`BT /F1 7 Tf 0.5 0.5 0.5 rg ${ML} 22 Td (TP Encartonneuse EB20 - Lycee Vaucanson - ${dateStr} - Page ${pi+1}/${pages.length}) Tj ET`);
+    p.parts.push(`0 0 0 rg`);
+  });
+
+  let pdf='%PDF-1.4\n%\xff\xff\xff\xff\n';
+  const rebuiltOffsets={};
+
+  function addObj(content){
+    const idx=Object.keys(rebuiltOffsets).length+1;
+    rebuiltOffsets[idx]=pdf.length;
+    pdf+=`${idx} 0 obj\n${content}\nendobj\n`;
+    return idx;
+  }
+
+  const f1=addObj('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+  const f2=addObj('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+  const fd=`<< /F1 ${f1} 0 R /F2 ${f2} 0 R >>`;
+
+  const pageRefs=[];
+  for(const p of pages){
+    const stream=p.parts.join('\n');
+    const cIdx=addObj(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+    const pIdx=addObj(`<< /Type /Page /Parent __PAGES__ /MediaBox [0 0 ${W} ${H}] /Contents ${cIdx} 0 R /Resources << /Font ${fd} >> >>`);
+    pageRefs.push(pIdx);
+  }
+
+  const pagesIdx=addObj(`<< /Type /Pages /Kids [${pageRefs.map(r=>r+' 0 R').join(' ')}] /Count ${pages.length} >>`);
+  const catIdx=addObj(`<< /Type /Catalog /Pages ${pagesIdx} 0 R >>`);
+  pdf=pdf.split('__PAGES__').join(`${pagesIdx} 0 R`);
+
+  const finalOffsets={};
+  let pos=0;
+  for(const line of pdf.split('\n')){
+    const m=line.match(/^(\d+) 0 obj$/);
+    if(m)finalOffsets[parseInt(m[1])]=pos;
+    pos+=line.length+1;
+  }
+
+  const xrefPos=pdf.length;
+  const numObjs=Object.keys(finalOffsets).length+1;
+  let xref=`xref\n0 ${numObjs}\n`;
+  xref+='0000000000 65535 f \n';
+  for(let i=1;i<numObjs;i++){
+    xref+=String(finalOffsets[i]||0).padStart(10,'0')+' 00000 n \n';
+  }
+  xref+=`trailer\n<< /Size ${numObjs} /Root ${catIdx} 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;
+  pdf+=xref;
+  return pdf;
+}
+
+// ====== TELECHARGER PDF ======
+function telechargerPDF() {
+  const nom=document.getElementById('eleve-nom').value.trim()||'Eleve';
+  const prenom=document.getElementById('eleve-prenom').value.trim()||'';
+  const classe=document.getElementById('eleve-classe').value||'Classe';
+  const pts=Object.values(scores).reduce((a,b)=>a+b,0);
+  const dateStr=new Date().toLocaleDateString('fr-FR');
+  if(!document.getElementById('final-section')||document.getElementById('final-section').style.display==='none'){
+    if(!validerIdentite()) return;
+    showFinal();
+  }
+  const stats=getTrackingStats();
+  const pdfStr=genPDF(nom,prenom,classe,pts,dateStr,stats);
+  const bytes=new Uint8Array(pdfStr.length);
+  for(let i=0;i<pdfStr.length;i++) bytes[i]=pdfStr.charCodeAt(i)&0xff;
+  const blob=new Blob([bytes],{type:'application/pdf'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='TP_Encartonneuse_EB20_'+classe+'_'+nom+'_'+prenom+'_'+pts+'sur40.pdf';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
+}
+
+// ====== OUVRIR DEPOT NEXTCLOUD ======
+function ouvrirDepot() {
+  const classeTokens={
+    '2PMIA1':'SFkasij3W8ZdY6X','2PMIA2':'KWTiQL5cLkQnRkw','2PMIA3':'Exk55DptbrJHmL8',
+    '2PMIA4':'NyFcyoajmiDHWBN','2PMIA5':'wbF4sqQkLCCr5Nj','1PLP':'Q2LF28DBwcDbaZ3',
+    'TPLP':'rq7TaGNDJc7MxZn','1CIP G1':'ZDYKjyNzsF4LNNC','1CIP G2':'KQp5LCtEKJsGXRT',
+    '2CIP G1':'kybKoENkrz9qKEo','2CIP G2':'5XdDxzyAJDFSgF4'
+  };
+  const classe=document.getElementById('eleve-classe').value;
+  if(!classe){alert('Selectionnez votre classe en haut du TP.');return;}
+  const token=classeTokens[classe];
+  if(!token){alert('Classe non reconnue.');return;}
+  const url='https://nuage01.apps.education.fr/index.php/s/'+token;
+  const st=document.getElementById('send-status');
+  st.innerHTML='Dossier de la classe <strong>'+classe+'</strong> ouvert dans un nouvel onglet.<br>'
+    +'<span style="font-size:.84rem;">Deposez-y votre fichier PDF.</span><br>'
+    +'<a href="'+url+'" target="_blank" style="color:#2b5f96;font-size:.82rem;">Cliquer ici si le dossier ne s\'est pas ouvert</a>';
+  st.className='success';
+  window.open(url,'_blank');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SYSTÈME ÉVALUATION PRONOTE - CODE COULEUR OFFICIEL
+// ══════════════════════════════════════════════════════════════════════════════
+
+const PRONOTE_NIVEAUX = [
+  {hex:'#275317', label:'Très bonne maîtrise',    pts:6, seuil:0.85, textColor:'#fff'},
+  {hex:'#4EA72E', label:'Maîtrise satisfaisante', pts:5, seuil:0.70, textColor:'#fff'},
+  {hex:'#92D050', label:'Presque maîtrisé',       pts:4, seuil:0.50, textColor:'#333'},
+  {hex:'#FFFF00', label:'Maîtrise fragile',        pts:3, seuil:0.35, textColor:'#333'},
+  {hex:'#FFC000', label:'Début de maîtrise',      pts:2, seuil:0.15, textColor:'#333'},
+  {hex:'#EE0000', label:'Maîtrise insuffisante',  pts:1, seuil:0.00, textColor:'#fff'},
+];
+
+// Compétences par filière (référentiel officiel)
+const COMP_CIP = {
+  CP01:"Communiquer en situation professionnelle et utiliser l'outil adapté pour rendre compte",
+  CP02:"S'informer et informer au cours de l'activité professionnelle",
+  CP03:"Préparer le travail au poste",
+  CP04:"Conduire l'installation à partir du poste de travail",
+  CP05:"Recueillir des données liées au produit et à la production",
+  CP06:"Identifier des risques au poste de travail",
+  CP07:"Appliquer des modes opératoires conformes aux objectifs de qualité et sécurité",
+};
+const COMP_PMIA = {
+  'CP1.1':"Décoder l'organisation de l'installation (structurelle, fonctionnelle, temporelle)",
+  'CP2.1':"Approvisionner et préparer les installations, matériels, produits et accessoires",
+  'CP2.2':"Préparer les documents nécessaires à la maintenance, organiser son intervention",
+  'CP2.3':"Identifier les risques pour les biens et les personnes",
+  'CP2.4':"Mettre en oeuvre les mesures de prévention associées aux risques identifiés",
+  'CP3.1':"Piloter une installation ou des modules en mode normal (démarrage)",
+  'CP3.2':"Piloter une installation ou des modules en mode normal (conduite)",
+  'CP3.3':"Assurer le suivi de la production (analyse des indicateurs, paramètres...)",
+  'CP4.1':"Réaliser des interventions de maintenance de niveau 1 (inspection, surveillance)",
+  'CP4.2':"Réaliser des interventions de maintenance de niveau 2 (dépose, repose pièces d'usure)",
+  'CP5.1':"Adopter une démarche éco-responsable",
+  'CP6.1':"Communiquer à l'écrit et/ou à l'oral dans son environnement professionnel",
+  'CP6.2':"Utiliser les outils numériques et informatiques",
+};
+const COMP_PLP = {
+  CP01:"Communiquer et rendre compte avec l'outil de communication adapté",
+  CP02:"S'informer et analyser la situation, informer au cours de l'activité professionnelle",
+  CP03:"Préparer le travail d'organisation et de réalisation du pilotage",
+  CP04:"Piloter une ligne ou un système de production",
+  CP05:"Assurer le suivi de production lié à l'analyse des indicateurs, paramètres et spécifications",
+  CP06:"Choisir et combiner des modes opératoires pour faire face aux situations",
+  CP07:"Gérer les compétences techniques des personnels affectés sur la ligne",
+  CP08:"Proposer des améliorations et des pistes de résolution de problèmes",
+  CP09:"Identifier des risques pour la production, les biens, l'environnement et la sécurité",
+  CP10:"Appliquer les mesures de prévention de tous les risques identifiés",
+};
+
+// Mapping : qComp du TP (logique interne) → code référentiel réel par filière
+const QCOMP_TO_CIP = {
+  q1:'CP04',
+  q2:'CP03',
+  q3:'CP04',
+  q4:'CP04',
+  q5:'CP03',
+  q6:'CP04',
+  q7:'CP04',
+  q8:'CP03',
+  q9:'CP04',
+  q10:'CP04',
+  q11:'CP05',
+  q12:'CP05',
+  q13:'CP05',
+  q14:'CP05',
+  q15:'CP05',
+  q16:'CP05',
+  q17:'CP05',
+  q18:'CP05',
+  q19:'CP01',
+  q20:'CP01',
+  q21:'CP02',
+  q22:'CP02',
+  q23:'CP02',
+  q24:'CP02',
+  q25:'CP02',
+  q26:'CP03',
+  q27:'CP03',
+  q28:'CP03',
+  q29:'CP02',
+  q30:'CP02',
+  q31:'CP04',
+  q32:'CP04',
+  q33:'CP03',
+  q34:'CP04',
+  q35:'CP01',
+  q36:'CP03',
+  q37:'CP04',
+  q38:'CP04',
+  q39:'CP01',
+  q40:'CP01'
+};
+const QCOMP_TO_PMIA = {
+  q1:'CP3.3',
+  q2:'CP2.1',
+  q3:'CP3.3',
+  q4:'CP3.3',
+  q5:'CP2.1',
+  q6:'CP3.3',
+  q7:'CP3.3',
+  q8:'CP2.1',
+  q9:'CP3.3',
+  q10:'CP3.3',
+  q11:'CP3.3',
+  q12:'CP3.3',
+  q13:'CP3.3',
+  q14:'CP3.3',
+  q15:'CP3.3',
+  q16:'CP3.3',
+  q17:'CP5.1',
+  q18:'CP3.3',
+  q19:'CP6.1',
+  q20:'CP6.1',
+  q21:'CP1.1',
+  q22:'CP1.1',
+  q23:'CP1.1',
+  q24:'CP1.1',
+  q25:'CP1.1',
+  q26:'CP2.1',
+  q27:'CP1.1',
+  q28:'CP1.1',
+  q29:'CP1.1',
+  q30:'CP1.1',
+  q31:'CP3.1',
+  q32:'CP3.1',
+  q33:'CP2.1',
+  q34:'CP3.1',
+  q35:'CP6.1',
+  q36:'CP2.1',
+  q37:'CP3.1',
+  q38:'CP3.1',
+  q39:'CP6.1',
+  q40:'CP6.1'
+};
+const QCOMP_TO_PLP = {
+  q1:'CP05',
+  q2:'CP03',
+  q3:'CP05',
+  q4:'CP05',
+  q5:'CP03',
+  q6:'CP05',
+  q7:'CP05',
+  q8:'CP03',
+  q9:'CP05',
+  q10:'CP05',
+  q11:'CP05',
+  q12:'CP05',
+  q13:'CP05',
+  q14:'CP08',
+  q15:'CP05',
+  q16:'CP08',
+  q17:'CP08',
+  q18:'CP08',
+  q19:'CP01',
+  q20:'CP01',
+  q21:'CP02',
+  q22:'CP02',
+  q23:'CP02',
+  q24:'CP02',
+  q25:'CP02',
+  q26:'CP03',
+  q27:'CP03',
+  q28:'CP03',
+  q29:'CP02',
+  q30:'CP02',
+  q31:'CP04',
+  q32:'CP04',
+  q33:'CP03',
+  q34:'CP04',
+  q35:'CP01',
+  q36:'CP03',
+  q37:'CP04',
+  q38:'CP04',
+  q39:'CP01',
+  q40:'CP01'
+};
+
+// Compétences retenues pour ce TP (max 3 par filière)
+const COMP_RETENUES = {
+  CIP:  ['CP02','CP03','CP04'],
+  PMIA: ['CP1.1','CP2.1','CP3.3'],
+  PLP:  ['CP02','CP03','CP05'],
+};
+
+const FILIERE_LABEL = {
+  CIP:  'CAP CIP – Conduite d\'Installation de Production',
+  PMIA: 'BAC PRO PMIA – Maintenance des Systèmes de Production',
+  PLP:  'BAC PRO PLP – Pilotage de Ligne de Production',
+};
+
+function getFiliere(classe) {
+  if(['2CIP G1','2CIP G2','1CIP G1','1CIP G2'].includes(classe)) return 'CIP';
+  if(['2PMIA1','2PMIA2','2PMIA3','2PMIA4','2PMIA5'].includes(classe)) return 'PMIA';
+  if(['1PLP','TPLP'].includes(classe)) return 'PLP';
+  return 'PLP';
+}
+
+function getCompLib(code, filiere) {
+  if(filiere==='CIP')  return COMP_CIP[code]  || code;
+  if(filiere==='PMIA') return COMP_PMIA[code] || code;
+  return COMP_PLP[code] || code;
+}
+
+function getQCompMap(filiere) {
+  if(filiere==='CIP')  return QCOMP_TO_CIP;
+  if(filiere==='PMIA') return QCOMP_TO_PMIA;
+  return QCOMP_TO_PLP;
+}
+
+function getPronoteNiveau(pct) {
+  for(const n of PRONOTE_NIVEAUX) {
+    if(pct >= n.seuil) return n;
+  }
+  return PRONOTE_NIVEAUX[PRONOTE_NIVEAUX.length-1];
+}
+
+function calcCompScores(filiere) {
+  const map  = getQCompMap(filiere);
+  const ret  = COMP_RETENUES[filiere];
+  const cS   = {}, cT = {};
+  ret.forEach(c => { cS[c]=0; cT[c]=0; });
+  Object.keys(scores).forEach(qid => {
+    const code = map[qid];
+    if(code && ret.includes(code)) {
+      cS[code] += scores[qid];
+      cT[code]++;
+    }
+  });
+  return {cS, cT};
+}
+
+function buildPronoteHTML(classe) {
+  const filiere  = getFiliere(classe);
+  const ret      = COMP_RETENUES[filiere];
+  const {cS, cT} = calcCompScores(filiere);
+
+  let html = `<div class="eval-intro-box">`;
+  html += `<strong>📋 Filière :</strong> ${FILIERE_LABEL[filiere]}<br>`;
+  html += `<strong>🎯 Compétences évaluées :</strong> ${ret.join(' · ')}`;
+  html += `</div>`;
+
+  ret.forEach(code => {
+    const total = cT[code] || 0;
+    const ok    = total > 0 ? cS[code] : 0;
+    const pct   = total > 0 ? ok / total : 0;
+    const niv   = getPronoteNiveau(pct);
+    const lib   = getCompLib(code, filiere);
+    const scoreStr = total > 0 ? `${ok}/${total} questions` : 'Non évaluée';
+
+    html += `<div class="pronote-row" style="background:${niv.hex}22;border-color:${niv.hex};">`;
+    html += `<div class="pronote-dot" style="background:${niv.hex};"></div>`;
+    html += `<div class="pronote-info">`;
+    html += `<div class="pronote-comp-code">${code}</div>`;
+    html += `<div class="pronote-comp-lib">${lib}</div>`;
+    html += `<div class="pronote-score">${scoreStr}</div>`;
+    html += `</div>`;
+    html += `<div class="pronote-right">`;
+    html += `<div class="pronote-niveau" style="color:${niv.hex==='#FFFF00'||niv.hex==='#92D050'||niv.hex==='#FFC000'?'#555':niv.hex};">${niv.label}</div>`;
+    html += `<div class="pronote-pts">${niv.pts} point${niv.pts>1?'s':''} Pronote</div>`;
+    html += `</div>`;
+    html += `</div>`;
+  });
+
+  // Légende Pronote complète
+  html += `<div class="pronote-legende">`;
+  html += `<div class="pronote-legende-title">Échelle Pronote complète</div>`;
+  html += `<div class="pronote-legende-grid">`;
+  PRONOTE_NIVEAUX.forEach(n => {
+    html += `<div class="pronote-leg-item">`;
+    html += `<div class="pronote-leg-dot" style="background:${n.hex};border:1px solid rgba(0,0,0,.15);"></div>`;
+    html += `<span>${n.label} (${n.pts} pt${n.pts>1?'s':''})</span>`;
+    html += `</div>`;
+  });
+  html += `</div></div>`;
+
+  return html;
+}
+
+// ── Validation identité ───────────────────────────────────────────────────────
+function validerIdentite() {
+  const nom    = document.getElementById('eleve-nom').value.trim();
+  const prenom = document.getElementById('eleve-prenom').value.trim();
+  const classe = document.getElementById('eleve-classe').value;
+  let ok = true;
+
+  [['eleve-nom','hint-nom',!nom],['eleve-prenom','hint-prenom',!prenom],['eleve-classe','hint-classe',!classe]].forEach(([fid,hid,err]) => {
+    const el = document.getElementById(fid);
+    const hd = document.getElementById(hid);
+    if(!el||!hd) return;
+    if(err){ el.classList.add('field-error'); hd.classList.add('show'); ok=false; }
+    else   { el.classList.remove('field-error'); hd.classList.remove('show'); }
+  });
+  if(!ok) document.querySelector('.eleve-box').scrollIntoView({behavior:'smooth'});
+  return ok;
+}
+
+// ── Surcharge showFinal ───────────────────────────────────────────────────────
+function showFinal() {
+  if(!validerIdentite()) return;
+  const classe = document.getElementById('eleve-classe').value;
+  document.getElementById('comp-eval-container').innerHTML = buildPronoteHTML(classe);
+  document.getElementById('final-section').style.display = 'block';
+  document.getElementById('final-section').scrollIntoView({behavior:'smooth'});
+}
+
+</script>
+</body>
+</html>

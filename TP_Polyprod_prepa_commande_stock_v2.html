@@ -1,0 +1,2156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TP – Gestion de Commande et de Stock | Polyprod | Lycée Vaucanson</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --vert:#4a9c5d;--vert-clair:#d4edda;--vert-fonce:#2d7a45;
+  --bleu:#4a87c0;--bleu-clair:#d0e6f7;--bleu-fonce:#2b5f96;
+  --gris:#8a9bac;--gris-clair:#e8ecf0;--gris-tres-clair:#f4f6f8;
+  --blanc:#ffffff;--rouge:#e05252;--rouge-clair:#fde8e8;
+  --texte:#2c3e50;--radius:10px;--shadow:0 4px 16px rgba(44,62,80,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Barlow',sans-serif;background:var(--gris-tres-clair);color:var(--texte);min-height:100vh;}
+
+/* HEADER */
+header{
+  background:
+    linear-gradient(135deg,rgba(43,95,150,0.65) 0%,rgba(45,122,69,0.62) 100%),
+    url("https://www.gestra.fr/uploads/images/actualites/Gestra%20-%20lignes%20de%20conditionnement%20de%20liquides%20009%20(Small).jpg") center/cover no-repeat;
+  color:#fff;padding:16px 28px;display:flex;align-items:center;gap:20px;
+  box-shadow:0 4px 22px rgba(0,0,0,.28);position:sticky;top:0;z-index:1000;
+}
+header img.logo{height:68px;border-radius:8px;background:#fff;padding:4px;box-shadow:0 2px 10px rgba(0,0,0,.3);}
+.header-text h1{font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;line-height:1.2;}
+.header-text p{font-size:.82rem;opacity:.85;margin-top:2px;}
+.header-right{margin-left:auto;display:flex;gap:10px;align-items:flex-start;}
+.header-machine{flex:1;display:flex;align-items:center;justify-content:center;}
+.header-machine span{font-family:'Barlow Condensed',sans-serif;font-size:2.2rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,0.4),0 0 30px rgba(255,255,255,0.15);opacity:0.95;}
+.hbox{background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 14px;text-align:center;}
+.hbox-label{font-size:.68rem;opacity:.8;text-transform:uppercase;letter-spacing:1px;}
+#timer{font-family:'Barlow Condensed',monospace;font-size:1.75rem;font-weight:700;letter-spacing:2px;}
+#timer.urgent{color:#ffcc00;animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+#score-display{font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;}
+
+/* PROGRESS */
+.progress-section{background:#fff;padding:13px 28px;border-bottom:2px solid var(--gris-clair);box-shadow:0 2px 8px rgba(0,0,0,.08);position:sticky;top:101px;z-index:999;}
+.progress-header{display:flex;justify-content:space-between;margin-bottom:7px;font-size:.8rem;color:var(--gris);font-weight:600;}
+.progress-bar-track{background:var(--gris-clair);border-radius:20px;height:13px;overflow:hidden;}
+.progress-bar-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--bleu),var(--vert));transition:width .5s cubic-bezier(.4,0,.2,1);width:0%;}
+.progress-milestones{display:flex;justify-content:space-between;margin-top:7px;}
+.milestone{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.68rem;color:var(--gris);font-weight:600;transition:color .3s;}
+.milestone-dot{width:11px;height:11px;border-radius:50%;background:var(--gris-clair);border:2px solid var(--gris);transition:all .3s;}
+.milestone.done .milestone-dot{background:var(--vert);border-color:var(--vert-fonce);}
+.milestone.done{color:var(--vert-fonce);}
+
+/* CONTAINER */
+.container{max-width:900px;margin:0 auto;padding:28px 18px 60px;}
+
+/* INTRO */
+.intro-box{background:#fff;border-radius:var(--radius);padding:22px 26px;margin-bottom:26px;box-shadow:var(--shadow);border-left:5px solid var(--bleu);}
+.intro-box h2{font-family:'Barlow Condensed',sans-serif;font-size:1.15rem;color:var(--bleu-fonce);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;}
+.intro-box p{font-size:.93rem;line-height:1.6;color:#555;margin-bottom:7px;}
+.machine-info{background:var(--bleu-clair);border-radius:8px;padding:13px 16px;margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.machine-info-item{font-size:.84rem;}
+.machine-info-item strong{color:var(--bleu-fonce);}
+
+/* SECTION */
+.section-block{background:#fff;border-radius:var(--radius);padding:0;margin-bottom:22px;box-shadow:var(--shadow);overflow:hidden;}
+.section-header{background:linear-gradient(135deg,var(--bleu-fonce),var(--bleu));color:#fff;padding:13px 22px;display:flex;align-items:center;gap:12px;}
+.section-header.vert{background:linear-gradient(135deg,var(--vert-fonce),var(--vert));}
+.section-number{background:rgba(255,255,255,.25);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.05rem;flex-shrink:0;}
+.section-title-block h2{font-family:'Barlow Condensed',sans-serif;font-size:1.05rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.section-title-block p{font-size:.75rem;opacity:.85;margin-top:2px;}
+.section-body{padding:20px 22px;}
+
+/* QUESTION */
+.question-block{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--gris-clair);}
+.question-block:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.question-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--bleu);margin-bottom:5px;}
+.competence-tag{display:inline-block;background:var(--bleu-clair);color:var(--bleu-fonce);font-size:.66rem;font-weight:700;padding:2px 7px;border-radius:12px;margin-left:6px;text-transform:uppercase;}
+.question-text{font-size:.95rem;line-height:1.6;color:var(--texte);margin-bottom:12px;font-weight:500;}
+.context-box{background:var(--gris-tres-clair);border:1px solid var(--gris-clair);border-radius:8px;padding:11px 14px;margin-bottom:12px;font-size:.84rem;line-height:1.5;color:#555;}
+.context-box strong{color:var(--bleu-fonce);}
+
+/* OPTIONS */
+.options-list{display:flex;flex-direction:column;gap:7px;}
+.option-item{display:flex;align-items:center;gap:11px;padding:9px 13px;border:2px solid var(--gris-clair);border-radius:8px;cursor:pointer;transition:all .2s;font-size:.89rem;}
+.option-item:hover{border-color:var(--bleu);background:var(--bleu-clair);}
+.option-item input[type=radio],.option-item input[type=checkbox]{width:17px;height:17px;accent-color:var(--bleu);cursor:pointer;flex-shrink:0;}
+.option-item.correct{border-color:var(--vert);background:var(--vert-clair);}
+.option-item.incorrect{border-color:var(--rouge);background:var(--rouge-clair);}
+
+/* INPUTS */
+.text-input{width:100%;padding:9px 13px;border:2px solid var(--gris-clair);border-radius:8px;font-size:.93rem;font-family:'Barlow',sans-serif;transition:border-color .2s;resize:vertical;}
+.text-input:focus{outline:none;border-color:var(--bleu);}
+.text-input.correct{border-color:var(--vert);background:var(--vert-clair);}
+.text-input.incorrect{border-color:var(--rouge);background:var(--rouge-clair);}
+.number-input-wrap{display:flex;align-items:center;gap:9px;margin-top:8px;}
+.number-input{width:110px;padding:9px 12px;border:2px solid var(--gris-clair);border-radius:8px;font-size:.98rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-align:center;transition:border-color .2s;}
+.number-input:focus{outline:none;border-color:var(--bleu);}
+.number-input.correct{border-color:var(--vert);background:var(--vert-clair);}
+.number-input.incorrect{border-color:var(--rouge);background:var(--rouge-clair);}
+.unit-label{font-size:.88rem;color:var(--gris);}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:.86rem;margin-bottom:8px;}
+.tbl th{background:var(--bleu-fonce);color:#fff;padding:9px 11px;text-align:left;font-weight:700;font-size:.8rem;}
+.tbl td{padding:8px 11px;border-bottom:1px solid var(--gris-clair);}
+.tbl tr:nth-child(even) td{background:var(--gris-tres-clair);}
+.tbl input[type=text],.tbl input[type=number]{width:100%;padding:5px 9px;border:1.5px solid var(--gris-clair);border-radius:6px;font-size:.86rem;font-family:'Barlow',sans-serif;}
+.tbl input.correct{border-color:var(--vert);background:var(--vert-clair);}
+.tbl input.incorrect{border-color:var(--rouge);background:var(--rouge-clair);}
+.tbl .alert{color:var(--rouge);font-weight:700;}
+.tbl .ok-st{color:var(--vert-fonce);font-weight:600;}
+.tbl.vert th{background:var(--vert-fonce);}
+
+/* BON DE COMMANDE */
+.bon-cmd{background:var(--gris-tres-clair);border:2px dashed var(--bleu);border-radius:10px;padding:16px 20px;margin:12px 0;}
+.bon-cmd h4{font-family:'Barlow Condensed',sans-serif;font-size:.98rem;color:var(--bleu-fonce);margin-bottom:13px;text-transform:uppercase;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:10px;}
+.form-group label{display:block;font-size:.76rem;font-weight:700;color:var(--gris);margin-bottom:4px;text-transform:uppercase;}
+.form-group input,.form-group select{width:100%;padding:8px 11px;border:1.5px solid var(--gris-clair);border-radius:7px;font-size:.88rem;font-family:'Barlow',sans-serif;background:#fff;transition:border-color .2s;}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--bleu);}
+.form-group input.correct{border-color:var(--vert);background:var(--vert-clair);}
+.form-group input.incorrect{border-color:var(--rouge);background:var(--rouge-clair);}
+
+/* VALIDATE BTN */
+.validate-btn{margin-top:11px;padding:8px 20px;background:var(--bleu);color:#fff;border:none;border-radius:8px;font-family:'Barlow',sans-serif;font-size:.86rem;font-weight:700;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:5px;}
+.validate-btn:hover{background:var(--bleu-fonce);transform:translateY(-1px);}
+.validate-btn:disabled{background:var(--gris);cursor:not-allowed;transform:none;}
+
+/* FEEDBACK */
+.feedback{display:none;margin-top:9px;padding:9px 13px;border-radius:8px;font-size:.86rem;font-weight:600;align-items:center;gap:7px;}
+.feedback.show{display:flex;}
+.feedback.ok{background:var(--vert-clair);color:var(--vert-fonce);border:1px solid var(--vert);}
+.feedback.nok{background:var(--rouge-clair);color:var(--rouge);border:1px solid var(--rouge);}
+
+/* FINAL */
+.final-section{background:#fff;border-radius:var(--radius);padding:28px;box-shadow:var(--shadow);text-align:center;border:3px solid var(--vert);margin-top:24px;}
+.final-section h2{font-family:'Barlow Condensed',sans-serif;font-size:1.7rem;color:var(--vert-fonce);margin-bottom:8px;}
+.comp-summary{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:14px 0;}
+.comp-badge{padding:5px 13px;border-radius:20px;font-size:.8rem;font-weight:700;}
+.comp-badge.validated{background:var(--vert-clair);color:var(--vert-fonce);border:2px solid var(--vert);}
+.comp-badge.partial{background:#fff3cd;color:#856404;border:2px solid #ffc107;}
+.send-btn{margin-top:18px;padding:13px 34px;background:linear-gradient(135deg,var(--vert-fonce),var(--vert));color:#fff;border:none;border-radius:10px;font-family:'Barlow Condensed',sans-serif;font-size:1.25rem;font-weight:700;cursor:pointer;transition:all .25s;box-shadow:0 4px 16px rgba(45,122,69,.3);letter-spacing:.5px;}
+.send-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(45,122,69,.4);}
+.send-btn:disabled{background:var(--gris);cursor:not-allowed;transform:none;box-shadow:none;}
+#send-status{margin-top:12px;font-size:.88rem;color:var(--gris);font-style:italic;}
+#send-status.success{color:var(--vert-fonce);font-style:normal;font-weight:600;}
+#send-status.error{color:var(--rouge);font-style:normal;font-weight:600;}
+
+/* NOM ELEVE */
+.eleve-box{background:#fff;border-radius:var(--radius);padding:18px 22px;margin-bottom:22px;box-shadow:var(--shadow);border-left:5px solid var(--vert);display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;}
+.eleve-box .form-group{flex:1;min-width:180px;}
+.eleve-box label{display:block;font-size:.76rem;font-weight:700;color:var(--gris);margin-bottom:4px;text-transform:uppercase;}
+.eleve-box input{width:100%;padding:9px 13px;border:2px solid var(--gris-clair);border-radius:8px;font-size:.95rem;font-family:'Barlow',sans-serif;}
+.eleve-box input:focus{outline:none;border-color:var(--vert);}
+
+@media(max-width:600px){
+  header{flex-wrap:wrap;padding:12px 14px;}
+  .header-right{flex-direction:row;margin-left:0;width:100%;justify-content:space-between;}
+  .form-row{grid-template-columns:1fr;}
+  .machine-info{grid-template-columns:1fr;}
+}
+
+/* IMPRESSION PDF */
+@media print {
+  body > *:not(#print-page) { display: none !important; }
+  #print-page { display: block !important; }
+  #print-content { font-family: Arial, sans-serif; font-size: 11pt; color: #000; }
+  #print-content h1 { font-size: 16pt; color: #2b5f96; border-bottom: 2px solid #2b5f96; padding-bottom: 6px; margin-bottom: 12px; }
+  #print-content h2 { font-size: 13pt; color: #2d7a45; margin: 16px 0 6px; border-left: 4px solid #2d7a45; padding-left: 8px; }
+  #print-content h3 { font-size: 11pt; color: #2b5f96; margin: 10px 0 4px; }
+  #print-content table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 10pt; }
+  #print-content th { background: #2b5f96; color: #fff; padding: 6px 8px; text-align: left; }
+  #print-content td { padding: 5px 8px; border: 1px solid #ccc; vertical-align: top; }
+  #print-content tr:nth-child(even) td { background: #f4f6f8; }
+  #print-content .juste { color: #2d7a45; font-weight: bold; }
+  #print-content .faux { color: #e05252; font-weight: bold; }
+  #print-content .note-box { text-align: center; border: 3px solid #2b5f96; border-radius: 8px; padding: 14px; margin: 14px 0; }
+  #print-content .note-val { font-size: 36pt; font-weight: 900; color: #2b5f96; }
+  #print-content .entete { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+  #print-content .entete-logo { font-size: 9pt; color: #555; }
+  #print-content .rep-longue { background: #f4f6f8; border-left: 3px solid #8a9bac; padding: 6px 10px; margin: 4px 0 10px; font-size: 10pt; white-space: pre-wrap; word-break: break-word; }
+  @page { margin: 1.5cm; }
+}
+
+/* ── VERROU IDENTITÉ ── */
+.field-error{border-color:#e74c3c!important;background:#fff5f5!important;animation:shake .3s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.required-hint{display:none;color:#e74c3c;font-size:.72rem;font-weight:700;margin-top:3px;}
+.required-hint.show{display:block;}
+.eleve-box label .req{color:#e74c3c;margin-left:2px;}
+
+/* ── ÉVALUATION PRONOTE ── */
+.pronote-block{background:#fff;border-radius:var(--radius);padding:20px 24px;margin-bottom:10px;box-shadow:var(--shadow);border:2px solid var(--vert);}
+.pronote-filiere{font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gris);margin-bottom:12px;padding:6px 10px;background:var(--gris-tres-clair);border-radius:6px;}
+.pronote-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:9px 13px;border-radius:8px;margin-bottom:7px;border:2px solid rgba(0,0,0,.08);}
+.pronote-dot{width:28px;height:28px;border-radius:6px;flex-shrink:0;}
+.pronote-info{min-width:0;}
+.pronote-comp-code{font-weight:800;font-size:.82rem;font-family:'Barlow Condensed',sans-serif;letter-spacing:.3px;}
+.pronote-comp-lib{font-size:.77rem;color:#555;margin-top:1px;line-height:1.3;}
+.pronote-right{text-align:right;flex-shrink:0;}
+.pronote-niveau{font-family:'Barlow Condensed',sans-serif;font-size:.82rem;font-weight:700;white-space:nowrap;}
+.pronote-pts{font-size:.7rem;color:#888;margin-top:1px;}
+.pronote-score{font-size:.72rem;color:#666;margin-top:2px;}
+.pronote-legende{margin-top:14px;border-top:1px solid var(--gris-clair);padding-top:12px;}
+.pronote-legende-title{font-size:.72rem;color:var(--gris);font-weight:700;text-transform:uppercase;margin-bottom:7px;letter-spacing:.5px;}
+.pronote-legende-grid{display:flex;flex-wrap:wrap;gap:5px;}
+.pronote-leg-item{display:flex;align-items:center;gap:5px;font-size:.7rem;padding:3px 8px;border-radius:4px;background:var(--gris-tres-clair);}
+.pronote-leg-dot{width:14px;height:14px;border-radius:3px;flex-shrink:0;}
+.eval-intro-box{background:var(--bleu-clair);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:.83rem;line-height:1.5;color:var(--bleu-fonce);}
+
+</style>
+</head>
+<body>
+
+<header>
+  <img class="logo" src="https://services.ard.fr/fileadmin/users/grenoble-vaucanson/logo.jpg" alt="Lycée Vaucanson" onerror="this.style.display='none'">
+  <div class="header-text">
+    <h1>TP – Gestion de Commande &amp; de Stock</h1>
+    <p>BAC PRO PLP &nbsp;·&nbsp; CAP CIP</p>
+    <p>Lycée Polyvalent Vaucanson – Grenoble</p>
+  </div>
+  <div class="header-machine">
+    <span>🧴 Polyprod</span>
+  </div>
+  <div class="header-right">
+    <div class="hbox">
+      <div class="hbox-label">⏱ Temps restant</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div id="timer">2:00:00</div>
+        <button id="pause-btn" onclick="togglePause()" title="Pause / Reprendre" style="background:rgba(255,255,255,0.25);border:2px solid rgba(255,255,255,0.5);border-radius:6px;color:#fff;font-size:1rem;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;flex-shrink:0;">⏸</button>
+      </div>
+    </div>
+    <div class="hbox">
+      <div class="hbox-label">Questions</div>
+      <div id="score-display">0 / 40</div>
+    </div>
+  </div>
+</header>
+
+<div class="progress-section">
+  <div class="progress-header">
+    <span>Avancement du TP</span>
+    <span id="progress-text">0 / 40 questions validées</span>
+  </div>
+  <div class="progress-bar-track">
+    <div class="progress-bar-fill" id="progress-fill"></div>
+  </div>
+  <div class="progress-milestones">
+    <div class="milestone" id="m1"><div class="milestone-dot"></div>Partie 1</div>
+    <div class="milestone" id="m2"><div class="milestone-dot"></div>Partie 2</div>
+    <div class="milestone" id="m3"><div class="milestone-dot"></div>Partie 3</div>
+    <div class="milestone" id="m4"><div class="milestone-dot"></div>Partie 4</div>
+    <div class="milestone" id="m5"><div class="milestone-dot"></div>Terminé ✓</div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- NOM ELEVE -->
+<div class="eleve-box">
+  <div class="form-group">
+    <label>Nom <span class="req">*</span></label>
+    <input type="text" id="eleve-nom" placeholder="Votre nom...">
+    <div class="required-hint" id="hint-nom">⚠ Le nom est obligatoire</div>
+  </div>
+  <div class="form-group">
+    <label>Prénom <span class="req">*</span></label>
+    <input type="text" id="eleve-prenom" placeholder="Votre prénom...">
+    <div class="required-hint" id="hint-prenom">⚠ Le prénom est obligatoire</div>
+  </div>
+  <div class="form-group">
+    <label>Classe <span class="req">*</span></label>
+    <select id="eleve-classe">
+      <option value="">-- Sélectionnez votre classe --</option>
+      <option value="2PMIA1">2PMIA1</option>
+      <option value="2PMIA2">2PMIA2</option>
+      <option value="2PMIA3">2PMIA3</option>
+      <option value="2PMIA4">2PMIA4</option>
+      <option value="2PMIA5">2PMIA5</option>
+      <option value="1PLP">1PLP</option>
+      <option value="TPLP">TPLP</option>
+      <option value="1CIP G1">1CIP G1</option>
+      <option value="1CIP G2">1CIP G2</option>
+      <option value="2CIP G1">2CIP G1</option>
+      <option value="2CIP G2">2CIP G2</option>
+    </select>
+    <div class="required-hint" id="hint-classe">⚠ La classe est obligatoire</div>
+  </div>
+</div>
+
+<!-- INTRO -->
+<div class="intro-box">
+  <h2>📋 Mise en situation</h2>
+  <p>Vous êtes <strong>conducteur de ligne de conditionnement</strong> au sein d'un établissement utilisant la machine <strong>Polyprod PP30</strong> fabriquée par ERM Automatismes Industriels (Carpentras, 84). Cette unité automatique réalise le <strong>remplissage et le bouchage</strong> de pots et de flacons avec des produits liquides, semi-pâteux ou solides (granulés). Elle fait partie de la ligne complète ERMAFLEX.</p>
+  <p>Ce TP porte sur la <strong>gestion du stock des consommables</strong>, la <strong>préparation de commandes</strong>, la <strong>conduite du système</strong> et le <strong>suivi de production</strong>.</p>
+  <p>Répondez à chaque question puis cliquez sur <strong>« Valider »</strong>. Vous obtenez immédiatement un code couleur : <span style="color:var(--vert-fonce);font-weight:700;">vert = correct</span> · <span style="color:var(--rouge);font-weight:700;">rouge = à revoir</span>.</p>
+  <div class="machine-info">
+    <div class="machine-info-item"><strong>Machine :</strong> POLYPROD PP30</div>
+    <div class="machine-info-item"><strong>Constructeur :</strong> ERM Automatismes Industriels – Carpentras (84)</div>
+    <div class="machine-info-item"><strong>Fonctions :</strong> Remplissage + Bouchage pots/flacons</div>
+    <div class="machine-info-item"><strong>Produits :</strong> Liquides, semi-pateux, solides (granules)</div>
+    <div class="machine-info-item"><strong>Cadence maxi :</strong> 600 pots ou 600 flacons/heure</div>
+    <div class="machine-info-item"><strong>Autonomie cuve :</strong> 50 L liquide · 40 L granules</div>
+  </div>
+</div>
+
+<!-- ======== PARTIE 1 (ex-Partie 2) : Gestion du stock des consommables ======== -->
+<div class="section-block">
+  <div class="section-header vert">
+    <div class="section-number">1</div>
+    <div class="section-title-block">
+      <h2>Gestion du stock des consommables</h2>
+      <p>CP03 – Préparer · CP04 – Piloter · CP05 – Suivi de production</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <!-- Q1 -->
+    <div class="question-block" id="qb1">
+      <div class="question-label">Question 1 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">La Polyprod produit des pots de crème de jour (125 ml). La nomenclature indique qu une palette = <strong>4 couches × 7 cartons × 24 pots</strong>. Combien de pots par palette ?</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q1-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q1-ans" placeholder="0" min="0">
+        <span class="unit-label">pots / palette</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(1,672,672,'Correct ! 4 x 7 x 24 = 672 pots par palette.','4 couches x 7 cartons x 24 pots = 672 pots par palette.')">Valider</button>
+      <div class="feedback" id="fb1"></div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="question-block" id="qb2">
+      <div class="question-label">Question 2 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Votre fournisseur de pots PV125 a un <strong>délai de livraison de 6 jours ouvrés</strong>. La consommation moyenne est de <strong>500 pots/jour</strong>. Calculez le <strong>stock minimum (point de commande)</strong> avec un coefficient de sécurité de <strong>25 %</strong>.</div>
+      <div class="context-box"><strong>Formule :</strong> Point de commande = (Conso jour x Délai) x (1 + sécurité)</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q2-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q2-ans" placeholder="0" min="0">
+        <span class="unit-label">pots</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(2,3700,3800,'Correct ! 500 x 6 = 3000, x 1,25 = 3 750 pots.','500 x 6 = 3 000 pots. Avec sécurité 25 % : 3 000 x 1,25 = 3 750 pots.')">Valider</button>
+      <div class="feedback" id="fb2"></div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="question-block" id="qb3">
+      <div class="question-label">Question 3 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">Analysez le tableau de stock ci-dessous. <strong>Cochez les articles nécessitant une commande urgente</strong>.</div>
+      <div class="context-box">
+        <table class="tbl">
+          <thead><tr><th>Référence</th><th>Désignation</th><th>Stock actuel</th><th>Stock mini</th></tr></thead>
+          <tbody>
+            <tr><td>PV125</td><td>Pots PV125 vides</td><td class="alert">350</td><td>500</td></tr>
+            <tr><td>BOUCH-PV</td><td>Bouchons pour pots PV125</td><td class="alert">280</td><td>500</td></tr>
+            <tr><td>CRU125</td><td>Flacons CRU125 vides</td><td class="ok-st">800</td><td>300</td></tr>
+            <tr><td>ETIQ-PV</td><td>Étiquettes adhésives PV</td><td class="ok-st">2500</td><td>1000</td></tr>
+            <tr><td>CART-IM</td><td>Cartons imprimés Polyprod</td><td class="alert">12</td><td>40</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q3" value="ETIQ"> ETIQ-PV (stock : 2500)</label>
+        <label class="option-item"><input type="checkbox" name="q3" value="PV125"> PV125 (stock : 350)</label>
+        <label class="option-item"><input type="checkbox" name="q3" value="CRU125"> CRU125 (stock : 800)</label>
+        <label class="option-item"><input type="checkbox" name="q3" value="BOUCH"> BOUCH-PV (stock : 280)</label>
+        <label class="option-item"><input type="checkbox" name="q3" value="CART"> CART-IM (stock : 12)</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(3,['PV125','BOUCH','CART'],'Parfait !','Articles en rupture : PV125 (350<500), BOUCH-PV (280<500), CART-IM (12<40).')">Valider</button>
+      <div class="feedback" id="fb3"></div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="question-block" id="qb4">
+      <div class="question-label">Question 4 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">Dans le tableau précédent, quel article est le <strong>plus critique</strong> pour conditionner les pots de crème ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q4" value="a"> ETIQ-PV (étiquettes)</label>
+        <label class="option-item"><input type="radio" name="q4" value="b"> CRU125 (flacons gel douche)</label>
+        <label class="option-item"><input type="radio" name="q4" value="c"> CART-IM (cartons imprimés)</label>
+        <label class="option-item"><input type="radio" name="q4" value="d"> PV125 (pots vides)</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(4,'d','Correct ! Sans pots PV125 vides, pas de conditionnement possible.','Les pots PV125 vides sont indispensables : sans eux, pas de remplissage possible. Les autres articles interviennent en aval.')">Valider</button>
+      <div class="feedback" id="fb4"></div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="question-block" id="qb5">
+      <div class="question-label">Question 5 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Calculez la <strong>quantité de pots PV125 à commander</strong> pour couvrir la production prévue avec stock de sécurité.</div>
+      <div class="context-box">
+        <strong>Données :</strong><br>
+        - Production prévue : 5 000 pots<br>
+        - Stock actuel : 350 pots<br>
+        - Stock de sécurité souhaité : 500 pots<br>
+        - Taux de rebut : 2 %
+      </div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q5-calc" rows="3" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q5-ans" placeholder="0" min="0">
+        <span class="unit-label">pots à commander</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(5,5240,5260,'Excellent ! Avec rebut 2 % : 5000/0,98 = 5102. À commander : 5102 - 350 + 500 = 5 252.','Production avec rebut = 5 000 / 0,98 ~ 5 102 pots. À commander = 5 102 - 350 + 500 = 5 252 pots.')">Valider</button>
+      <div class="feedback" id="fb5"></div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="question-block" id="qb6">
+      <div class="question-label">Question 6 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">L atelier consomme <strong>120 000 pots PV125</strong> par an. Le stock moyen sur l année est de <strong>4 000 pots</strong>. Calculez le <strong>taux de rotation du stock</strong>.</div>
+      <div class="context-box"><strong>Formule :</strong> Rotation = Conso annuelle / Stock moyen</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q6-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q6-ans" placeholder="0" min="0">
+        <span class="unit-label">rotations/an</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(6,29,31,'Correct ! 120 000 / 4 000 = 30 rotations/an.','120 000 / 4 000 = 30 rotations/an.')">Valider</button>
+      <div class="feedback" id="fb6"></div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="question-block" id="qb7">
+      <div class="question-label">Question 7 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">Le guide de maintenance préventive Polyprod impose diverses vérifications. <strong>Associez chaque opération à sa fréquence correcte</strong>.</div>
+      <table class="tbl vert" id="q7-table">
+        <thead><tr><th>Opération</th><th>Fréquence (entrez la lettre A-D)</th></tr></thead>
+        <tbody>
+          <tr><td>Vérification du niveau d huile pneumatique</td><td><input type="text" class="q7-in" data-rep="A" placeholder="A-D" maxlength="1" style="width:60px;text-align:center;text-transform:uppercase;"></td></tr>
+          <tr><td>Nettoyage de la cuve produit</td><td><input type="text" class="q7-in" data-rep="B" placeholder="A-D" maxlength="1" style="width:60px;text-align:center;text-transform:uppercase;"></td></tr>
+          <tr><td>Lubrification des chaînes du convoyeur</td><td><input type="text" class="q7-in" data-rep="C" placeholder="A-D" maxlength="1" style="width:60px;text-align:center;text-transform:uppercase;"></td></tr>
+          <tr><td>Vidange complète de la pompe doseuse</td><td><input type="text" class="q7-in" data-rep="D" placeholder="A-D" maxlength="1" style="width:60px;text-align:center;text-transform:uppercase;"></td></tr>
+        </tbody>
+      </table>
+      <div class="context-box" style="font-size:.85rem;">
+        <strong>A</strong> = Quotidienne · <strong>B</strong> = Après chaque produit pâteux · <strong>C</strong> = Hebdomadaire · <strong>D</strong> = Annuelle
+      </div>
+      <button class="validate-btn" onclick="valQ7()">Valider</button>
+      <div class="feedback" id="fb7"></div>
+    </div>
+
+    <!-- Q8 -->
+    <div class="question-block" id="qb8">
+      <div class="question-label">Question 8 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Une livraison de pots PV125 arrive en zone de stockage. Quelle est la <strong>procédure correcte de réception</strong> ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q8" value="a"> Vérifier la quantité par rapport au bon de commande</label>
+        <label class="option-item"><input type="checkbox" name="q8" value="b"> Mettre directement en machine sans contrôle</label>
+        <label class="option-item"><input type="checkbox" name="q8" value="c"> Contrôler l état des pots (pas de chocs ni rayures)</label>
+        <label class="option-item"><input type="checkbox" name="q8" value="d"> Mettre à jour le tableau de stock</label>
+        <label class="option-item"><input type="checkbox" name="q8" value="e"> Signaler tout écart au responsable</label>
+        <label class="option-item"><input type="checkbox" name="q8" value="f"> Jeter le bon de livraison</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(8,['a','c','d','e'],'Parfait !','Procédure : vérifier qty, contrôler état, MAJ stock, signaler écarts. Pas de mise en machine sans contrôle ni jeter le bon.')">Valider</button>
+      <div class="feedback" id="fb8"></div>
+    </div>
+
+    <!-- Q9 -->
+    <div class="question-block" id="qb9">
+      <div class="question-label">Question 9 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">Après chaque utilisation avec un produit pâteux (gel douche), la documentation ERM impose un <strong>rinçage obligatoire de la doseuse</strong>. Décrivez les étapes principales du rinçage. (Réponse rédigée)</div>
+      <textarea class="text-input" id="q9-ans" rows="4" placeholder="Décrivez les étapes du rinçage..."></textarea>
+      <button class="validate-btn" onclick="valTexte(9,['vidanger','vidange','rincer','rincage','rinçage','eau','produit','nettoyer','tuyau','doseuse','cuve'],3,'Bien rédigé ! Vidanger la cuve, rincer à l eau claire, faire circuler l eau dans la doseuse, vérifier propreté.','Rinçage : 1) Vidanger la cuve produit, 2) Remplir avec eau claire, 3) Faire fonctionner la doseuse pour rincer tuyaux et buses, 4) Vidanger l eau de rinçage, 5) Vérifier la propreté.')">Valider</button>
+      <div class="feedback" id="fb9"></div>
+    </div>
+
+    <!-- Q10 -->
+    <div class="question-block" id="qb10">
+      <div class="question-label">Question 10 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">Sur l année, la machine a subi <strong>15 arrêts pour rupture de pots</strong>, totalisant <strong>9 heures d arrêt</strong>. Le temps total d ouverture annuel est de <strong>900 heures</strong>. Calculez le <strong>taux d indisponibilité dû aux ruptures</strong>.</div>
+      <div class="context-box"><strong>Formule :</strong> Taux indispo = (Tps arrêt / Tps ouverture) x 100</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q10-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q10-ans" placeholder="0" min="0" step="0.01">
+        <span class="unit-label">%</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(10,0.95,1.05,'Correct ! (9/900) x 100 = 1,00 %.','Calcul : (9 / 900) x 100 = 1,00 %.')">Valider</button>
+      <div class="feedback" id="fb10"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ======== PARTIE 2 (ex-Partie 4) : Indicateurs de production ======== -->
+<div class="section-block">
+  <div class="section-header">
+    <div class="section-number">2</div>
+    <div class="section-title-block">
+      <h2>Indicateurs de production et communication</h2>
+      <p>CP05 – Suivi · CP06 – Modes opératoires · CP08 – Amélioration</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <!-- Q11 -->
+    <div class="question-block" id="qb11">
+      <div class="question-label">Question 11 <span class="competence-tag">CP06</span></div>
+      <div class="question-text">La cadence nominale est de <strong>600 flacons/heure</strong>. Sur la matinée, la machine a produit <strong>2 100 flacons</strong> en <strong>4 heures de production effective</strong>. Calculez le <strong>TRS</strong>.</div>
+      <div class="context-box"><strong>TRS = (Production réelle / Production théorique) x 100.</strong></div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q11-calc" rows="3" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q11-ans" placeholder="0" min="0" max="100" step="0.1">
+        <span class="unit-label">%</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(11,86,89,'Excellent ! Théorique = 600x4 = 2 400. TRS = (2 100/2 400)x100 = 87,5 %.','Théorique = 600x4 = 2 400 flacons. TRS = (2 100/2 400) x 100 = 87,5 %.')">Valider</button>
+      <div class="feedback" id="fb11"></div>
+    </div>
+
+    <!-- Q12 -->
+    <div class="question-block" id="qb12">
+      <div class="question-label">Question 12 <span class="competence-tag">CP06</span></div>
+      <div class="question-text">Sur un poste de <strong>7 heures</strong>, la Polyprod a connu :</div>
+      <div class="context-box">
+        - Temps d ouverture (TO) : 7h = <strong>420 min</strong><br>
+        - Arrêts pannes/réglages : <strong>30 min</strong> (TF = 390 min)<br>
+        - Production réalisée : <strong>3 600 flacons</strong> (cadence = 600/h = 10/min)<br>
+        - Flacons non conformes : <strong>120 rebutés</strong><br>
+        Calculez le <strong>TRS complet</strong> (D x P x Q).
+      </div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q12-calc" rows="4" placeholder="D = TF/TO = ...&#10;P = ...&#10;Q = ...&#10;TRS = ..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q12-ans" placeholder="0" min="0" max="100" step="0.1">
+        <span class="unit-label">%</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(12,84,90,'Bravo ! D=92,86 % ; P=92,3 % ; Q=96,7 % ; TRS = 0,9286 x 0,923 x 0,967 = 82,9 %.','D=390/420=92,86 %. P=3600/(390x10)=92,3 %. Q=(3600-120)/3600=96,7 %. TRS = 0,9286 x 0,923 x 0,967 x 100 ~ 82,9 %.')">Valider</button>
+      <div class="feedback" id="fb12"></div>
+    </div>
+
+    <!-- Q13 -->
+    <div class="question-block" id="qb13">
+      <div class="question-label">Question 13 <span class="competence-tag">CP05</span></div>
+      <div class="question-text">En fin de semaine, le compteur totalise <strong>2 100 flacons</strong> produits sur <strong>4 heures de production effective</strong>. Calculez la <strong>cadence réelle</strong>.</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q13-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q13-ans" placeholder="0" min="0">
+        <span class="unit-label">flacons/heure</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(13,520,530,'Correct ! 2 100 / 4 = 525 flacons/heure.','Cadence réelle = 2 100 / 4 = 525 flacons/heure.')">Valider</button>
+      <div class="feedback" id="fb13"></div>
+    </div>
+
+    <!-- Q14 -->
+    <div class="question-block" id="qb14">
+      <div class="question-label">Question 14 <span class="competence-tag">CP08</span></div>
+      <div class="question-text">La cadence nominale est de <strong>600 flacons/h</strong> mais la cadence réelle est de <strong>525 flacons/h</strong>. Combien de flacons ont été <strong>perdus</strong> sur les 4 heures ?</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q14-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q14-ans" placeholder="0" min="0">
+        <span class="unit-label">flacons perdus</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(14,295,305,'Excellent ! 600x4=2400 théorique. 2400-2100=300 flacons perdus.','Perte = 600 x 4 - 2 100 = 2 400 - 2 100 = 300 flacons.')">Valider</button>
+      <div class="feedback" id="fb14"></div>
+    </div>
+
+    <!-- Q15 -->
+    <div class="question-block" id="qb15">
+      <div class="question-label">Question 15 <span class="competence-tag">CP06</span></div>
+      <div class="question-text">Le pupitre Polyprod affiche « <strong>MANQUE BOUCHON</strong> ». Quelle est la cause probable et l action à effectuer ?</div>
+      <div class="options-list" style="margin-bottom:10px;">
+        <label class="option-item"><input type="radio" name="q15a" value="a"> Trémie de bouchons vide ou bourrage à l alimentation</label>
+        <label class="option-item"><input type="radio" name="q15a" value="b"> Surchauffe moteur de la doseuse</label>
+        <label class="option-item"><input type="radio" name="q15a" value="c"> Défaut du convoyeur d entrée</label>
+        <label class="option-item"><input type="radio" name="q15a" value="d"> Capteur de niveau cuve produit défaillant</label>
+      </div>
+      <div style="font-size:.86rem;font-weight:600;margin-bottom:7px;">Procédure à suivre :</div>
+      <textarea class="text-input" id="q15-proc" rows="3" placeholder="Décrivez la procédure..."></textarea>
+      <button class="validate-btn" onclick="valQ15()">Valider</button>
+      <div class="feedback" id="fb15"></div>
+    </div>
+
+    <!-- Q16 -->
+    <div class="question-block" id="qb16">
+      <div class="question-label">Question 16 <span class="competence-tag">CP08</span></div>
+      <div class="question-text">Vous constatez que <strong>10 % des flacons</strong> ne sont pas correctement bouchés (bouchons mal vissés). Avec la méthode des <strong>5M</strong>, quelle est la cause racine la plus probable ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q16" value="a"> Matériel : tête de bouchage déréglée (couple, profondeur)</label>
+        <label class="option-item"><input type="radio" name="q16" value="b"> Main d œuvre : opérateur insuffisamment formé</label>
+        <label class="option-item"><input type="radio" name="q16" value="c"> Milieu : humidité ambiante</label>
+        <label class="option-item"><input type="radio" name="q16" value="d"> Méthode : ordre de production non respecté</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(16,'a','Correct ! Cause Matériel : tête de bouchage déréglée.','5M : Matériel (tête de bouchage déréglée, couple incorrect, hauteur de bouchage non adaptée). C est la cause systémique la plus probable.')">Valider</button>
+      <div class="feedback" id="fb16"></div>
+    </div>
+
+    <!-- Q17 -->
+    <div class="question-block" id="qb17">
+      <div class="question-label">Question 17 <span class="competence-tag">CP08</span></div>
+      <div class="question-text">L alarme « <strong>REMPLIR CUVE PRODUIT LIQUIDE</strong> » apparaît fréquemment, arrêtant le cycle. <strong>Proposez une amélioration</strong>.</div>
+      <textarea class="text-input" id="q17-ans" rows="5" placeholder="Décrivez votre proposition..."></textarea>
+      <button class="validate-btn" onclick="valTexte(17,['cuve','remplir','niveau','anticip','seuil','alerte','remplissage','automatique','programm','volume','contin','pre-remplissage'],2,'Bonne proposition !','Pistes : pré-remplissage anticipé, alerte avant niveau bas, programmation horaire de remplissage, augmenter la capacité cuve.')">Valider</button>
+      <div class="feedback" id="fb17"></div>
+    </div>
+
+    <!-- Q18 -->
+    <div class="question-block" id="qb18">
+      <div class="question-label">Question 18 <span class="competence-tag">CP08</span></div>
+      <div class="question-text">Le responsable demande un <strong>tableau de bord hebdomadaire</strong>. Quels indicateurs sont <strong>pertinents</strong> ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q18" value="a"> Nombre de pots/flacons produits / semaine</label>
+        <label class="option-item"><input type="checkbox" name="q18" value="b"> TRS hebdomadaire</label>
+        <label class="option-item"><input type="checkbox" name="q18" value="c"> Couleur des t-shirts des opérateurs</label>
+        <label class="option-item"><input type="checkbox" name="q18" value="d"> Taux de rebut</label>
+        <label class="option-item"><input type="checkbox" name="q18" value="e"> Nombre d arrêts machine et leur cause</label>
+        <label class="option-item"><input type="checkbox" name="q18" value="f"> Nombre de jours fériés</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(18,['a','b','d','e'],'Parfait !','Indicateurs : Production, TRS, Taux rebut, Arrêts. T-shirts et jours fériés ne sont pas des KPI.')">Valider</button>
+      <div class="feedback" id="fb18"></div>
+    </div>
+
+    <!-- Q19 -->
+    <div class="question-block" id="qb19">
+      <div class="question-label">Question 19 <span class="competence-tag">CP01</span></div>
+      <div class="question-text">Rédigez un <strong>compte-rendu de fin de poste</strong> pour le conducteur du poste suivant.</div>
+      <textarea class="text-input" id="q19-ans" rows="7" placeholder="Compte-rendu : production, stock, points d attention..."></textarea>
+      <button class="validate-btn" onclick="valTexte(19,['production','pot','flacon','stock','attention','poste','arrêt','arret','consigne','lot','recette'],3,'Excellent !','Compte-rendu : production réalisée (lots, recettes), état stock (pots, bouchons), arrêts/anomalies, points d attention.')">Valider</button>
+      <div class="feedback" id="fb19"></div>
+    </div>
+
+    <!-- Q20 -->
+    <div class="question-block" id="qb20">
+      <div class="question-label">Question 20 <span class="competence-tag">CP01</span></div>
+      <div class="question-text">Un client cosmétique signale qu un <strong>lot de pots de crème</strong> avait des bouchons mal vissés. Rédigez un court email : excuses, cause, action corrective, compensation.</div>
+      <textarea class="text-input" id="q20-ans" rows="6" placeholder="Objet : ...&#10;&#10;Bonjour,&#10;&#10;..."></textarea>
+      <button class="validate-btn" onclick="valTexte(20,['excuse','désol','desol','remplac','correctif','contrôle','controle','qualité','qualite','bouchage','dédommag','dedommag','client'],3,'Bien rédigé !','Email type : excuses, cause (réglage tête bouchage), action (vérification couple, contrôle qualité), compensation (remplacement lot).')">Valider</button>
+      <div class="feedback" id="fb20"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ======== PARTIE 3 (ex-Partie 1) : Présentation machine ======== -->
+<div class="section-block">
+  <div class="section-header vert">
+    <div class="section-number">3</div>
+    <div class="section-title-block">
+      <h2>Présentation de la machine et des flux</h2>
+      <p>CP02 – S informer · CP03 – Préparer</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <!-- Q21 -->
+    <div class="question-block" id="qb21">
+      <div class="question-label">Question 21 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">Quelle est la <strong>cadence maximale</strong> de la Polyprod PP30 selon la fiche technique ?</div>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q21-ans" placeholder="0" min="0">
+        <span class="unit-label">pots ou flacons / heure</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(21,590,610,'Correct ! 600 pots/h ou flacons/h selon la fiche technique.','La cadence maximale est de 600 pots ou flacons par heure (fiche technique ERM Polyprod PP30).')">Valider</button>
+      <div class="feedback" id="fb21"></div>
+    </div>
+
+    <!-- Q22 -->
+    <div class="question-block" id="qb22">
+      <div class="question-label">Question 22 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">Quels <strong>dispositifs de sécurité ou de contrôle</strong> équipent la Polyprod ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q22" value="a"> Capteur de présence pots/flacons</label>
+        <label class="option-item"><input type="checkbox" name="q22" value="b"> Détecteur GPS</label>
+        <label class="option-item"><input type="checkbox" name="q22" value="c"> Capteur de niveau cuve produit</label>
+        <label class="option-item"><input type="checkbox" name="q22" value="d"> Carter de protection avec contact de sécurité</label>
+        <label class="option-item"><input type="checkbox" name="q22" value="e"> Bouton d arrêt d urgence</label>
+        <label class="option-item"><input type="checkbox" name="q22" value="f"> Reconnaissance vocale</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(22,['a','c','d','e'],'Parfait !','Dispositifs : capteur pots, capteur cuve, carter sécurité, arrêt urgence. Pas de GPS ni reconnaissance vocale.')">Valider</button>
+      <div class="feedback" id="fb22"></div>
+    </div>
+
+    <!-- Q23 -->
+    <div class="question-block" id="qb23">
+      <div class="question-label">Question 23 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">Quelle est la <strong>fonction principale</strong> de la machine Polyprod PP30 ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q23" value="a"> Fabriquer les pots et flacons par injection plastique</label>
+        <label class="option-item"><input type="radio" name="q23" value="b"> Trier des produits cosmétiques par catégorie</label>
+        <label class="option-item"><input type="radio" name="q23" value="c"> Remplir et boucher des pots ou flacons (liquides, semi-pâteux, granulés)</label>
+        <label class="option-item"><input type="radio" name="q23" value="d"> Stériliser des contenants en verre</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(23,'c','Correct ! Remplissage et bouchage de pots/flacons.','La Polyprod PP30 réalise le remplissage (liquide, semi-pâteux, granulés) puis le bouchage de pots ou flacons.')">Valider</button>
+      <div class="feedback" id="fb23"></div>
+    </div>
+
+    <!-- Q24 -->
+    <div class="question-block" id="qb24">
+      <div class="question-label">Question 24 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">D après les spécifications du dossier produit POLYPROD, quelles sont les caractéristiques du <strong>gel douche</strong> conditionné ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q24" value="a"> Liquide très fluide, sans viscosité</label>
+        <label class="option-item"><input type="radio" name="q24" value="b"> Semi-pâteux, viscosité moyenne</label>
+        <label class="option-item"><input type="radio" name="q24" value="c"> Granulés solides</label>
+        <label class="option-item"><input type="radio" name="q24" value="d"> Poudre cosmétique</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(24,'b','Correct ! Le gel douche est un produit semi-pâteux.','Le gel douche est classé comme produit semi-pâteux (visqueux, intermédiaire entre liquide et pâte).')">Valider</button>
+      <div class="feedback" id="fb24"></div>
+    </div>
+
+    <!-- Q25 -->
+    <div class="question-block" id="qb25">
+      <div class="question-label">Question 25 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">Quels sont les <strong>deux types de contenants</strong> que peut traiter la Polyprod PP30 ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q25" value="a"> Pots PV125 (125 ml)</label>
+        <label class="option-item"><input type="checkbox" name="q25" value="b"> Briques de lait carton</label>
+        <label class="option-item"><input type="checkbox" name="q25" value="c"> Flacons CRU125</label>
+        <label class="option-item"><input type="checkbox" name="q25" value="d"> Sachets souples</label>
+        <label class="option-item"><input type="checkbox" name="q25" value="e"> Bouteilles en verre 1 L</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(25,['a','c'],'Parfait ! Pots PV125 et flacons CRU125.','La Polyprod PP30 traite les pots PV125 (125 ml) et les flacons CRU125.')">Valider</button>
+      <div class="feedback" id="fb25"></div>
+    </div>
+
+    <!-- Q26 -->
+    <div class="question-block" id="qb26">
+      <div class="question-label">Question 26 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Quels articles le pilote doit-il <strong>aussi suivre</strong> pour la maintenance préventive ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q26" value="a"> Huile pneumatique pour vérins</label>
+        <label class="option-item"><input type="checkbox" name="q26" value="b"> Lubrifiant alimentaire pour chaînes</label>
+        <label class="option-item"><input type="checkbox" name="q26" value="c"> Téléviseurs salle de pause</label>
+        <label class="option-item"><input type="checkbox" name="q26" value="d"> Joints d étanchéité de la doseuse</label>
+        <label class="option-item"><input type="checkbox" name="q26" value="e"> Pneus de voiture</label>
+        <label class="option-item"><input type="checkbox" name="q26" value="f"> Produits de nettoyage agréés contact alimentaire</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(26,['a','b','d','f'],'Parfait !','Articles maintenance : huile pneumatique, lubrifiant chaînes, joints doseuse, produits nettoyage.')">Valider</button>
+      <div class="feedback" id="fb26"></div>
+    </div>
+
+    <!-- Q27 -->
+    <div class="question-block" id="qb27">
+      <div class="question-label">Question 27 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">La ligne ERMAFLEX comporte plusieurs postes. <strong>Remettez dans le bon ordre</strong> les étapes après la fabrication du produit.</div>
+      <div class="context-box"><strong>Étapes :</strong> A = Étiquetage · B = Bouchage · C = Mise en carton · D = Remplissage</div>
+      <table class="tbl vert">
+        <thead><tr><th>N° ordre</th><th>Étape</th></tr></thead>
+        <tbody>
+          <tr><td><input type="number" class="q27-order" data-action="A" min="1" max="4" placeholder="1-4" style="width:60px;"></td><td>Étiquetage des pots/flacons</td></tr>
+          <tr><td><input type="number" class="q27-order" data-action="B" min="1" max="4" placeholder="1-4" style="width:60px;"></td><td>Bouchage</td></tr>
+          <tr><td><input type="number" class="q27-order" data-action="C" min="1" max="4" placeholder="1-4" style="width:60px;"></td><td>Mise en carton</td></tr>
+          <tr><td><input type="number" class="q27-order" data-action="D" min="1" max="4" placeholder="1-4" style="width:60px;"></td><td>Remplissage</td></tr>
+        </tbody>
+      </table>
+      <button class="validate-btn" onclick="valQ27()">Valider</button>
+      <div class="feedback" id="fb27"></div>
+    </div>
+
+    <!-- Q28 -->
+    <div class="question-block" id="qb28">
+      <div class="question-label">Question 28 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">La cuve produit a une capacité de <strong>50 litres</strong>. Pour conditionner des flacons de gel douche de <strong>200 ml</strong>, calculez le nombre de flacons que peut remplir une cuve pleine.</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q28-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q28-ans" placeholder="0" min="0">
+        <span class="unit-label">flacons</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(28,250,250,'Correct ! 50 L = 50 000 mL. 50 000 / 200 = 250 flacons.','50 L = 50 000 mL. 50 000 / 200 mL = 250 flacons par cuve.')">Valider</button>
+      <div class="feedback" id="fb28"></div>
+    </div>
+
+    <!-- Q29 -->
+    <div class="question-block" id="qb29">
+      <div class="question-label">Question 29 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">Pour <strong>changer de production</strong> (pots → flacons), quelles actions sont nécessaires selon la documentation ERM ? (Cochez toutes les bonnes réponses)</div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q29" value="a"> Vidanger et nettoyer la cuve produit</label>
+        <label class="option-item"><input type="checkbox" name="q29" value="b"> Changer le format de bouchage (mandrin, couple)</label>
+        <label class="option-item"><input type="checkbox" name="q29" value="c"> Repeindre la machine en orange</label>
+        <label class="option-item"><input type="checkbox" name="q29" value="d"> Recharger le magasin avec les flacons CRU125</label>
+        <label class="option-item"><input type="checkbox" name="q29" value="e"> Modifier la recette (volume, vitesse) sur le pupitre</label>
+        <label class="option-item"><input type="checkbox" name="q29" value="f"> Changer les vis du carter principal</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(29,['a','b','d','e'],'Parfait !','Changement de production : vidange/nettoyage cuve, changement format bouchage, charger nouveaux contenants, modifier recette.')">Valider</button>
+      <div class="feedback" id="fb29"></div>
+    </div>
+
+    <!-- Q30 -->
+    <div class="question-block" id="qb30">
+      <div class="question-label">Question 30 <span class="competence-tag">CP02</span></div>
+      <div class="question-text">La machine s arrête. Vous observez : <strong>plus aucun pot ne se présente sur le convoyeur</strong>. Quelle alarme est probablement affichée ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q30" value="a"> MANQUE BOUCHON</label>
+        <label class="option-item"><input type="radio" name="q30" value="b"> MAGASIN POTS VIDE</label>
+        <label class="option-item"><input type="radio" name="q30" value="c"> REMPLIR CUVE PRODUIT LIQUIDE</label>
+        <label class="option-item"><input type="radio" name="q30" value="d"> SURCHAUFFE MOTEUR</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(30,'b','Correct ! Plus de pots = magasin vide.','Si plus de pots ne se présentent, c est que le magasin amont est vide -> alarme MAGASIN POTS VIDE. Solution : recharger.')">Valider</button>
+      <div class="feedback" id="fb30"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ======== PARTIE 4 (ex-Partie 3) : Préparation de commandes ======== -->
+<div class="section-block">
+  <div class="section-header">
+    <div class="section-number">4</div>
+    <div class="section-title-block">
+      <h2>Préparation de commandes clients</h2>
+      <p>CP01 – Communiquer · CP03 – Préparer · CP04 – Piloter</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="context-box" style="margin-bottom:18px;">
+      <strong>Situation :</strong> Vous recevez des commandes pour différents produits (crème de jour, gel douche). Vous devez préparer la production en conséquence.
+    </div>
+
+    <!-- Q31 -->
+    <div class="question-block" id="qb31">
+      <div class="question-label">Question 31 <span class="competence-tag">CP04</span></div>
+      <div class="question-text">Calculez le <strong>volume total de gel douche</strong> nécessaire pour remplir une palette complète de flacons. Nomenclature : <strong>5 couches × 10 cartons × 14 flacons × 200 ml</strong>.</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q31-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q31-ans" placeholder="0" min="0">
+        <span class="unit-label">litres</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(31,140,140,'Exact ! 5 x 10 x 14 = 700 flacons x 200 ml = 140 000 ml = 140 L.','5 x 10 x 14 = 700 flacons. Volume = 700 x 200 ml = 140 000 ml = 140 L.')">Valider</button>
+      <div class="feedback" id="fb31"></div>
+    </div>
+
+    <!-- Q32 -->
+    <div class="question-block" id="qb32">
+      <div class="question-label">Question 32 <span class="competence-tag">CP04</span></div>
+      <div class="question-text">Le client commande <strong>1 000 flacons</strong> conformes. Le taux de rebut est de <strong>3 %</strong>. Combien faut-il <strong>lancer en production</strong> ?</div>
+      <div class="context-box"><strong>Astuce :</strong> Production = Besoin / 0,97.</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q32-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q32-ans" placeholder="0" min="0">
+        <span class="unit-label">flacons à produire</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(32,1031,1035,'Excellent ! 1000/0,97 ~ 1 031 flacons.','1 000 / 0,97 ~ 1 031 flacons (arrondi sup.).')">Valider</button>
+      <div class="feedback" id="fb32"></div>
+    </div>
+
+    <!-- Q33 -->
+    <div class="question-block" id="qb33">
+      <div class="question-label">Question 33 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Avant de lancer la production de <strong>700 flacons</strong> de gel douche, vérifiez que le stock est suffisant. Complétez le tableau.</div>
+      <table class="tbl vert" id="q33-table">
+        <thead><tr><th>Consommable</th><th>Besoin</th><th>Stock actuel</th><th>Suffisant ? (O/N)</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Flacons CRU125</td>
+            <td>700 flacons</td>
+            <td>800 flacons</td>
+            <td><input type="text" class="q33-in" data-rep="O" placeholder="O ou N" maxlength="1" style="width:60px;text-align:center;text-transform:uppercase;"></td>
+          </tr>
+          <tr>
+            <td>Bouchons</td>
+            <td>700 bouchons</td>
+            <td>280 bouchons</td>
+            <td><input type="text" class="q33-in" data-rep="N" placeholder="O ou N" maxlength="1" style="width:60px;text-align:center;text-transform:uppercase;"></td>
+          </tr>
+          <tr>
+            <td>Gel douche (200 ml/flacon)</td>
+            <td>140 L</td>
+            <td>50 L (cuve)</td>
+            <td><input type="text" class="q33-in" data-rep="N" placeholder="O ou N" maxlength="1" style="width:60px;text-align:center;text-transform:uppercase;"></td>
+          </tr>
+          <tr>
+            <td>Étiquettes</td>
+            <td>700 étiquettes</td>
+            <td>2500 étiquettes</td>
+            <td><input type="text" class="q33-in" data-rep="O" placeholder="O ou N" maxlength="1" style="width:60px;text-align:center;text-transform:uppercase;"></td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="validate-btn" onclick="valQ33()">Valider</button>
+      <div class="feedback" id="fb33"></div>
+    </div>
+
+    <!-- Q34 -->
+    <div class="question-block" id="qb34">
+      <div class="question-label">Question 34 <span class="competence-tag">CP04</span></div>
+      <div class="question-text">La machine est paramétrée pour une recette de <strong>120 flacons de gel douche</strong>. La cadence réelle est de <strong>480 flacons/h</strong>. Combien de minutes faudra-t-il pour terminer la recette ?</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q34-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q34-ans" placeholder="0" min="0">
+        <span class="unit-label">minutes</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(34,15,15,'Correct ! 120 flacons / 480 flac/h = 0,25 h = 15 min.','Temps = 120 / 480 = 0,25 heure = 15 minutes.')">Valider</button>
+      <div class="feedback" id="fb34"></div>
+    </div>
+
+    <!-- Q35 -->
+    <div class="question-block" id="qb35">
+      <div class="question-label">Question 35 <span class="competence-tag">CP01</span></div>
+      <div class="question-text">Rédigez une <strong>fiche de demande d approvisionnement urgent</strong> pour les articles manquants.</div>
+      <div class="bon-cmd">
+        <h4>Demande d approvisionnement urgent</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="text" id="q35-date" placeholder="JJ/MM/AAAA">
+          </div>
+          <div class="form-group">
+            <label>N° de commande</label>
+            <input type="text" id="q35-cmd" placeholder="Ex : CMD-2024-...">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Article 1 – Référence</label>
+            <input type="text" id="q35-ref1" placeholder="Référence...">
+          </div>
+          <div class="form-group">
+            <label>Quantité</label>
+            <input type="text" id="q35-qty1" placeholder="...">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Article 2 – Référence</label>
+            <input type="text" id="q35-ref2" placeholder="Référence...">
+          </div>
+          <div class="form-group">
+            <label>Quantité</label>
+            <input type="text" id="q35-qty2" placeholder="...">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Urgence</label>
+            <select id="q35-urgence">
+              <option value="">Sélectionner...</option>
+              <option value="normale">Normale (48h)</option>
+              <option value="urgent">Urgent (24h)</option>
+              <option value="tres-urgent">Très urgent</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Motif</label>
+            <input type="text" id="q35-motif" placeholder="Motif...">
+          </div>
+        </div>
+      </div>
+      <button class="validate-btn" onclick="valQ35()">Valider la fiche</button>
+      <div class="feedback" id="fb35"></div>
+    </div>
+
+    <!-- Q36 -->
+    <div class="question-block" id="qb36">
+      <div class="question-label">Question 36 <span class="competence-tag">CP03</span></div>
+      <div class="question-text">Le fournisseur propose les bouchons à <strong>0,08 € HT pièce</strong>. La TVA est de <strong>20 %</strong>. Calculez le <strong>montant TTC</strong> pour <strong>5 000 bouchons</strong>.</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q36-calc" rows="2" placeholder="HT = ...&#10;TTC = ..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q36-ans" placeholder="0" min="0" step="0.01">
+        <span class="unit-label">€ TTC</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(36,479,481,'Correct ! HT = 5000 x 0,08 = 400 €. TTC = 400 x 1,20 = 480 €.','HT = 5 000 x 0,08 = 400 €. TTC = 400 x 1,20 = 480,00 €.')">Valider</button>
+      <div class="feedback" id="fb36"></div>
+    </div>
+
+    <!-- Q37 -->
+    <div class="question-block" id="qb37">
+      <div class="question-label">Question 37 <span class="competence-tag">CP04</span></div>
+      <div class="question-text">Vous avez produit <strong>700 flacons</strong> de gel douche. Stock initial : <strong>800 flacons CRU125</strong>. Combien reste-t-il en stock ?</div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q37-calc" rows="2" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q37-ans" placeholder="0" min="0">
+        <span class="unit-label">flacons restants</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(37,100,100,'Correct ! 800 - 700 = 100 flacons restants.','Stock restant = 800 - 700 = 100 flacons CRU125.')">Valider</button>
+      <div class="feedback" id="fb37"></div>
+    </div>
+
+    <!-- Q38 -->
+    <div class="question-block" id="qb38">
+      <div class="question-label">Question 38 <span class="competence-tag">CP04</span></div>
+      <div class="question-text">Trois nouvelles commandes :</div>
+      <div class="context-box">
+        - Commande A : <strong>200 pots</strong> de crème<br>
+        - Commande B : <strong>500 pots</strong> de crème<br>
+        - Commande C : <strong>800 flacons</strong> de gel douche<br>
+        Stock pots : <strong>5 252</strong>. Stock flacons : <strong>1 200</strong>.<br>
+        Calculez le <strong>stock de pots restant</strong> après les 2 commandes de pots.
+      </div>
+      <div style="font-size:.86rem;margin-bottom:8px;font-weight:600;">Calcul :</div>
+      <textarea class="text-input" id="q38-calc" rows="3" placeholder="Calcul..."></textarea>
+      <div class="number-input-wrap">
+        <input type="number" class="number-input" id="q38-ans" placeholder="0" min="0">
+        <span class="unit-label">pots restants</span>
+      </div>
+      <button class="validate-btn" onclick="valNumber(38,4550,4555,'Excellent ! 200+500=700. Restant 5252-700=4 552 pots.','A+B = 200+500 = 700 pots consommés. Restant = 5 252 - 700 = 4 552 pots.')">Valider</button>
+      <div class="feedback" id="fb38"></div>
+    </div>
+
+    <!-- Q39 -->
+    <div class="question-block" id="qb39">
+      <div class="question-label">Question 39 <span class="competence-tag">CP01</span></div>
+      <div class="question-text">Quelles informations devez-vous renseigner dans le <strong>document de suivi de production</strong> Polyprod ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="checkbox" name="q39" value="a"> Le nom du chauffeur de la livraison</label>
+        <label class="option-item"><input type="checkbox" name="q39" value="b"> Le nombre de pots/flacons produits</label>
+        <label class="option-item"><input type="checkbox" name="q39" value="c"> Les anomalies ou défauts constatés</label>
+        <label class="option-item"><input type="checkbox" name="q39" value="d"> Le numéro de lot et la recette</label>
+        <label class="option-item"><input type="checkbox" name="q39" value="e"> Les volumes de produit consommés</label>
+      </div>
+      <button class="validate-btn" onclick="valCheckbox(39,['b','c','d','e'],'Parfait !','Informations : nb produits, anomalies, n° lot/recette, volumes consommés.')">Valider</button>
+      <div class="feedback" id="fb39"></div>
+    </div>
+
+    <!-- Q40 -->
+    <div class="question-block" id="qb40">
+      <div class="question-label">Question 40 <span class="competence-tag">CP01</span></div>
+      <div class="question-text">Pour la <strong>traçabilité</strong> en cosmétique (obligatoire), quel format de <strong>numéro de lot</strong> respecte les bonnes pratiques ?</div>
+      <div class="options-list">
+        <label class="option-item"><input type="radio" name="q40" value="a"> L1 (numéro arbitraire)</label>
+        <label class="option-item"><input type="radio" name="q40" value="b"> 2024-038 (uniquement n° de bon)</label>
+        <label class="option-item"><input type="radio" name="q40" value="c"> Le nom du produit suffit</label>
+        <label class="option-item"><input type="radio" name="q40" value="d"> PP30-20240315-R12-L01 (machine + date + recette + lot)</label>
+      </div>
+      <button class="validate-btn" onclick="valRadio(40,'d','Correct !','Format complet : machine (PP30) + date (20240315) + recette (R12) + lot (L01). Indispensable en cosmétique pour la traçabilité réglementaire.')">Valider</button>
+      <div class="feedback" id="fb40"></div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- FINAL -->
+<div class="final-section" id="final-section" style="display:none;">
+  <h2>🎓 Récapitulatif du TP</h2>
+  <p style="color:#555;font-size:.93rem;">Évaluation par compétences :</p>
+  <div id="comp-eval-container"><p style="color:#aaa;font-size:.88rem;text-align:center;padding:12px;">Renseignez votre identité puis cliquez sur «&nbsp;Voir mon évaluation&nbsp;».</p></div>
+
+  <div style="background:var(--bleu-clair);border-radius:10px;padding:16px 20px;margin:18px 0;text-align:left;font-size:.88rem;line-height:1.8;">
+    <strong style="color:var(--bleu-fonce);">📌 Comment envoyer votre copie en 2 étapes :</strong><br>
+    <span style="color:#333;">
+      <b>Étape 1 —</b> Cliquez sur <em>« 📄 Télécharger ma correction en PDF »</em> : une fenêtre d'impression s'ouvre → sélectionnez <strong>« Enregistrer en PDF »</strong> et sauvegardez le fichier.<br>
+      <b>Étape 2 —</b> Cliquez sur <em>« 📤 Envoyer au professeur »</em> : le dossier de votre classe s'ouvre → déposez-y le fichier PDF.
+    </span>
+  </div>
+
+  <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:6px;">
+    <button class="send-btn" style="background:linear-gradient(135deg,var(--bleu-fonce),var(--bleu));" onclick="telechargerPDF()">📄 Télécharger ma correction en PDF</button>
+    <button class="send-btn" id="send-btn" onclick="ouvrirDepot()">📤 Envoyer au professeur</button>
+  </div>
+  <div id="send-status"></div>
+</div>
+
+<div style="text-align:center;margin-top:22px;">
+  <button onclick="showFinal()" style="padding:12px 28px;background:var(--bleu-fonce);color:#fff;border:none;border-radius:8px;font-family:'Barlow',sans-serif;font-size:.98rem;font-weight:700;cursor:pointer;">
+    📊 Voir mon évaluation &amp; envoyer
+  </button>
+</div>
+
+</div><!-- /container -->
+
+<!-- ===== PAGE D'IMPRESSION (cachée à l'écran, visible uniquement à l'impression) ===== -->
+<div id="print-page" style="display:none;">
+  <div id="print-content"></div>
+</div>
+<script>
+// ====== TIMER ======
+const DUREE = 2 * 3600;
+let secondes = DUREE;
+let timerPaused = false;
+const timerEl = document.getElementById('timer');
+let timerInterval = setInterval(() => {
+  if (timerPaused) return;
+  secondes--;
+  if (secondes < 0) { secondes = 0; clearInterval(timerInterval); }
+  let h = Math.floor(secondes / 3600);
+  let m = Math.floor((secondes % 3600) / 60);
+  let s = secondes % 60;
+  timerEl.textContent = h + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  if (secondes < 900) timerEl.classList.add('urgent');
+}, 1000);
+
+function togglePause() {
+  timerPaused = !timerPaused;
+  const btn = document.getElementById('pause-btn');
+  if (timerPaused) {
+    btn.textContent = '▶';
+    btn.title = 'Reprendre le chronomètre';
+    btn.style.background = 'rgba(255,204,0,0.4)';
+    timerEl.style.opacity = '0.5';
+  } else {
+    btn.textContent = '⏸';
+    btn.title = 'Mettre en pause';
+    btn.style.background = 'rgba(255,255,255,0.25)';
+    timerEl.style.opacity = '1';
+  }
+}
+
+// ====== TRACKING COMPORTEMENTAL ======
+const tpStartTime = Date.now();
+let keyCount = 0;
+let pasteCount = 0;
+let pasteDetails = []; // { question, heure }
+let keyActiveMs = 0;
+let keyLastStart = null;
+let inactiveMs = 0;
+let inactiveLastStart = null;
+const INACTIVITY_THRESHOLD = 30000; // 30s sans action = inactif
+let inactivityTimer = null;
+const qTimestamps = {}; // { q1: { start: Date, validated: Date, seconds: N } }
+let currentQStart = Date.now();
+
+// Démarrage de la question courante
+function startQTimer(qid) {
+  qTimestamps[qid] = { start: Date.now() };
+}
+
+// Frappe clavier
+document.addEventListener('keydown', () => {
+  if (!keyLastStart) keyLastStart = Date.now();
+  resetInactivity();
+});
+document.addEventListener('keyup', () => {
+  keyCount++;
+  if (keyLastStart) { keyActiveMs += Date.now() - keyLastStart; keyLastStart = null; }
+  resetInactivity();
+});
+
+// Copier-coller
+document.addEventListener('paste', (e) => {
+  pasteCount++;
+  // Identifier dans quelle question on est
+  const target = e.target;
+  let qid = '';
+  const block = target ? target.closest('[id^="qb"]') : null;
+  if (block) qid = block.id.replace('qb','Q');
+  const heure = new Date().toLocaleTimeString('fr-FR');
+  pasteDetails.push({ zone: qid||'zone inconnue', heure });
+  resetInactivity();
+});
+
+// Détection inactivité
+function resetInactivity() {
+  if (inactiveLastStart) {
+    inactiveMs += Date.now() - inactiveLastStart;
+    inactiveLastStart = null;
+  }
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(() => {
+    inactiveLastStart = Date.now();
+  }, INACTIVITY_THRESHOLD);
+}
+// Lancer le timer d'inactivité dès le départ
+resetInactivity();
+
+// Enregistrer l'heure de validation de chaque question
+function recordQTime(id) {
+  const now = Date.now();
+  if (!qTimestamps['q'+id]) qTimestamps['q'+id] = { start: tpStartTime };
+  qTimestamps['q'+id].validated = now;
+  qTimestamps['q'+id].seconds = Math.round((now - qTimestamps['q'+id].start) / 1000);
+}
+
+function fmtDuration(ms) {
+  if (ms < 0) ms = 0;
+  const tot = Math.round(ms / 1000);
+  const h = Math.floor(tot/3600);
+  const m = Math.floor((tot%3600)/60);
+  const s = tot%60;
+  if (h > 0) return h+'h '+String(m).padStart(2,'0')+'min '+String(s).padStart(2,'0')+'s';
+  if (m > 0) return m+'min '+String(s).padStart(2,'0')+'s';
+  return s+'s';
+}
+
+function getTrackingStats() {
+  const totalMs = Date.now() - tpStartTime;
+  // Finaliser les compteurs en cours
+  let keyMs = keyActiveMs + (keyLastStart ? Date.now()-keyLastStart : 0);
+  let inactMs = inactiveMs + (inactiveLastStart ? Date.now()-inactiveLastStart : 0);
+  return {
+    totalMs,
+    keyMs,
+    inactMs,
+    keyCount,
+    pasteCount,
+    pasteDetails,
+    tempsPasseElapsed: DUREE - secondes, // secondes écoulées sur le chrono
+  };
+}
+
+// ====== SCORE ======
+const scores = {};
+const qComp = {
+  q1:'CP05',
+  q2:'CP03',
+  q3:'CP05',
+  q4:'CP05',
+  q5:'CP03',
+  q6:'CP05',
+  q7:'CP05',
+  q8:'CP03',
+  q9:'CP05',
+  q10:'CP05',
+  q11:'CP06',
+  q12:'CP06',
+  q13:'CP05',
+  q14:'CP08',
+  q15:'CP06',
+  q16:'CP08',
+  q17:'CP08',
+  q18:'CP08',
+  q19:'CP01',
+  q20:'CP01',
+  q21:'CP02',
+  q22:'CP02',
+  q23:'CP02',
+  q24:'CP02',
+  q25:'CP02',
+  q26:'CP03',
+  q27:'CP03',
+  q28:'CP03',
+  q29:'CP02',
+  q30:'CP02',
+  q31:'CP04',
+  q32:'CP04',
+  q33:'CP03',
+  q34:'CP04',
+  q35:'CP01',
+  q36:'CP03',
+  q37:'CP04',
+  q38:'CP04',
+  q39:'CP01',
+  q40:'CP01'
+};
+const qTitres = ['',
+  'Calcul nb pots par palette',
+  'Calcul stock minimum securite',
+  'Analyse tableau de stock',
+  'Article le plus critique',
+  'Calcul commande pots PV125',
+  'Calcul taux de rotation stock',
+  'Frequences maintenance',
+  'Procedure reception livraison',
+  'Procedure rincage doseuse',
+  'Calcul taux indispo ruptures',
+  'Calcul TRS simple',
+  'Calcul TRS complet (DxPxQ)',
+  'Calcul cadence reelle flacons',
+  'Calcul perte de production',
+  'Alarme MANQUE BOUCHON',
+  'Analyse cause racine 5M',
+  'Amelioration alarme cuve',
+  'Choix des indicateurs KPI',
+  'Compte-rendu fin de poste',
+  'Email reclamation client',
+  'Cadence maximale Polyprod',
+  'Dispositifs de securite',
+  'Fonction de la machine',
+  'Caracteristique gel douche',
+  'Deux types de contenants',
+  'Consommables maintenance',
+  'Ordre etapes ligne ERMAFLEX',
+  'Calcul nb flacons par cuve',
+  'Changement de production',
+  'Diagnostic alarme symptome',
+  'Calcul volume gel douche palette',
+  'Calcul commande avec rebut',
+  'Verification stock production',
+  'Calcul duree recette',
+  'Fiche approvisionnement urgent',
+  'Calcul montant TTC bouchons',
+  'Calcul stock flacons restant',
+  'Calcul prevision multi-cmd',
+  'Informations suivi production',
+  'Numero de lot tracabilite'];
+const corrections = ['',
+  '4 x 7 x 24 = 672 pots/palette.',
+  '500x6=3000, x1,25=3 750 pots.',
+  'PV125 (350<500), BOUCH-PV (280<500), CART-IM (12<40).',
+  'PV125 - critique car arret immediat sans pots vides.',
+  'Avec rebut : 5000/0,98=5102. A commander = 5252.',
+  '120 000 / 4 000 = 30 rotations/an.',
+  'Huile A=quotidien, Cuve B=apres pateux, Chaines C=hebdo, Doseuse D=annuel.',
+  'Verifier qty/ref, controler etat, MAJ stock, signaler ecarts.',
+  'Vidanger cuve, rincer eau claire, faire circuler dans doseuse, verifier proprete.',
+  '(9/900) x 100 = 1,00 %.',
+  'Theorique=600x4=2400. TRS=(2100/2400)x100=87,5 %.',
+  'D=92,86 % x P=92,3 % x Q=96,7 % = TRS 82,9 %.',
+  '2 100 / 4 = 525 flacons/heure.',
+  '600x4 - 2100 = 300 flacons perdus.',
+  'Tremie bouchons vide ou bourrage. Recharger, debourrer.',
+  'Cause racine 5M = Materiel (tete bouchage deréglée).',
+  'Pre-remplissage anticipe, alerte avant niveau bas, capacite cuve accrue.',
+  'KPI utiles : Production, TRS, Taux rebut, Arrets machine.',
+  'Production realisee, etat stock, points d attention.',
+  'Email avec excuses, cause, action correctrice et compensation.',
+  '600 pots ou flacons par heure.',
+  'Capteurs pots/cuve, carter securite, arret urgence.',
+  'Remplir et boucher pots/flacons (liquide, semi-pateux, granules).',
+  'Semi-pateux, viscosite moyenne.',
+  'Pots PV125 et flacons CRU125.',
+  'Huile pneumatique, lubrifiant chaines, joints doseuse, produits nettoyage.',
+  'Ordre : 1-Remplissage (D), 2-Bouchage (B), 3-Etiquetage (A), 4-Mise en carton (C).',
+  '50 L = 50 000 ml. 50000/200 = 250 flacons.',
+  'Vidange cuve, changement format bouchage, recharger contenants, modifier recette.',
+  'Plus de pots -> alarme MAGASIN POTS VIDE.',
+  '5 x 10 x 14 = 700 flacons. 700 x 200 ml = 140 000 ml = 140 L.',
+  '1000/0,97 ~ 1 031 flacons.',
+  'Flacons O, Bouchons N, Gel N, Etiquettes O.',
+  '120/480 = 0,25 h = 15 min.',
+  'Fiche complete : date, n cmd, articles, qty, urgence, motif.',
+  '5000 x 0,08 = 400 EUR HT, x 1,20 = 480 EUR TTC.',
+  '800 - 700 = 100 flacons restants.',
+  'A+B = 700 pots consommes. Restant = 5252 - 700 = 4 552.',
+  'Nb produits, anomalies, n lot/recette, volumes consommes.',
+  'Format PP30-AAAAMMJJ-Rxx-Lnn (machine+date+recette+lot).'];
+
+function updateProgress() {
+  const done = Object.keys(scores).length;
+  const pts = Object.values(scores).reduce((a,b)=>a+b,0);
+  document.getElementById('progress-fill').style.width = (done/40*100)+'%';
+  document.getElementById('progress-text').textContent = done+' / 40 questions validees';
+  document.getElementById('score-display').textContent = pts+' / 40';
+  if(done>=10) document.getElementById('m1').classList.add('done');
+  if(done>=20) document.getElementById('m2').classList.add('done');
+  if(done>=30) document.getElementById('m3').classList.add('done');
+  if(done>=39) document.getElementById('m4').classList.add('done');
+  if(done>=40) document.getElementById('m5').classList.add('done');
+}
+
+// Compatibilite : setFB est un alias vers showFeedback (pour TP qui utilise showFeedback)
+function setFB(id, ok, msgOk, msgNok) {
+  scores['q'+id] = ok ? 1 : 0;
+  if (typeof showFeedback === 'function') {
+    showFeedback(id, ok, ok ? msgOk : msgNok);
+  } else {
+    const fb = document.getElementById('fb'+id);
+    if (fb) { fb.className='feedback show '+(ok?'ok':'nok'); fb.innerHTML=(ok?'✅ ':'❌ ')+(ok?msgOk:msgNok); }
+  }
+  updateProgress();
+  if (typeof recordQTime === 'function') recordQTime(id);
+}
+
+function setFB(id, ok, msgOk, msgNok) {
+  const fb = document.getElementById('fb'+id);
+  fb.className='feedback show '+(ok?'ok':'nok');
+  fb.innerHTML=(ok?'✅ ':'❌ ')+(ok?msgOk:msgNok);
+  scores['q'+id]=ok?1:0;
+  recordQTime(id);
+  updateProgress();
+  document.getElementById('qb'+id).querySelectorAll('input,textarea,select').forEach(el=>el.disabled=true);
+  document.getElementById('qb'+id).querySelectorAll('.validate-btn').forEach(b=>b.disabled=true);
+}
+function valRadio(id,correct,msgOk,msgNok){
+  const v=document.querySelector('input[name="q'+id+'"]:checked');
+  if(!v){alert('Selectionnez une reponse.');return;}
+  document.querySelectorAll('input[name="q'+id+'"]').forEach(inp=>{
+    if(inp.value===correct) inp.closest('.option-item').classList.add('correct');
+    else if(inp.value===v.value&&inp.value!==correct) inp.closest('.option-item').classList.add('incorrect');
+  });
+  setFB(id,v.value===correct,msgOk,msgNok);
+}
+function valCheckbox(id,correct,msgOk,msgNok){
+  const checked=Array.from(document.querySelectorAll('input[name="q'+id+'"]:checked')).map(c=>c.value);
+  const ok=checked.length===correct.length&&correct.every(c=>checked.includes(c));
+  document.querySelectorAll('input[name="q'+id+'"]').forEach(inp=>{
+    if(correct.includes(inp.value)) inp.closest('.option-item').classList.add('correct');
+    else if(checked.includes(inp.value)) inp.closest('.option-item').classList.add('incorrect');
+  });
+  setFB(id,ok,msgOk,msgNok);
+}
+function valNumber(id,min,max,msgOk,msgNok){
+  const el=document.getElementById('q'+id+'-ans');
+  const v=parseFloat(el.value);
+  if(isNaN(v)){alert('Entrez une valeur numerique.');return;}
+  const ok=v>=min&&v<=max;
+  el.classList.add(ok?'correct':'incorrect');
+  setFB(id,ok,msgOk,msgNok);
+}
+function valTexte(id,keywords,minFound,msgOk,msgNok){
+  const v=document.getElementById('q'+id+'-ans').value.toLowerCase();
+  const found=keywords.filter(k=>v.includes(k)).length;
+  const ok=found>=minFound&&v.length>50;
+  document.getElementById('q'+id+'-ans').classList.add(ok?'correct':'incorrect');
+  setFB(id,ok,msgOk,msgNok);
+}
+function valDouble(id,n1,v1,n2,v2,msgOk,msgNok){
+  const a=document.querySelector('input[name="'+n1+'"]:checked');
+  const b=document.querySelector('input[name="'+n2+'"]:checked');
+  if(!a||!b){alert('Repondez aux deux parties.');return;}
+  const ok1=a.value===v1,ok2=b.value===v2;
+  document.querySelectorAll('input[name="'+n1+'"]').forEach(inp=>{
+    if(inp.value===v1) inp.closest('.option-item').classList.add('correct');
+    else if(!ok1&&inp.value===a.value) inp.closest('.option-item').classList.add('incorrect');
+  });
+  document.querySelectorAll('input[name="'+n2+'"]').forEach(inp=>{
+    if(inp.value===v2) inp.closest('.option-item').classList.add('correct');
+    else if(!ok2&&inp.value===b.value) inp.closest('.option-item').classList.add('incorrect');
+  });
+  setFB(id,ok1&&ok2,msgOk,msgNok);
+}
+function valQ7(){
+  const inputs=document.querySelectorAll('.q7-in'); let ok=true;
+  inputs.forEach(inp=>{
+    const v=inp.value.trim().toUpperCase();
+    if(v!==inp.dataset.rep){ok=false;inp.classList.add('incorrect');}else inp.classList.add('correct');
+  });
+  setFB(7,ok,'Parfait ! Huile A, Cuve B, Chaines C, Doseuse D.','Huile pneumatique = A (quotidienne) ; Cuve = B (apres produit pateux) ; Chaines = C (hebdo) ; Doseuse = D (annuelle).');
+}
+
+function valQ15(){
+  const v=document.querySelector('input[name="q15a"]:checked');
+  if(!v){alert('Selectionnez la cause.');return;}
+  const proc=document.getElementById('q15-proc').value.toLowerCase();
+  const ok1=v.value==='a';
+  const ok2=proc.length>30&&(proc.includes('arr')||proc.includes('rechar')||proc.includes('debour')||proc.includes('signal')||proc.includes('bouchon')||proc.includes('tremie'));
+  document.querySelectorAll('input[name="q15a"]').forEach(inp=>{
+    if(inp.value==='a') inp.closest('.option-item').classList.add('correct');
+    else if(!ok1&&inp.value===v.value) inp.closest('.option-item').classList.add('incorrect');
+  });
+  document.getElementById('q15-proc').classList.add(ok2?'correct':'incorrect');
+  setFB(15,ok1&&ok2,'Correct ! Tremie vide ou bourrage. Procedure : recharger, debourrer, relancer.',
+    'Cause : Tremie de bouchons vide ou bourrage. Procedure : arret machine, recharger la tremie de bouchons, debourrer si necessaire, acquitter et relancer.');
+}
+
+function valQ27(){
+  const o={};document.querySelectorAll('.q27-order').forEach(inp=>{o[inp.dataset.action]=parseInt(inp.value);});
+  setFB(27,o['D']===1&&o['B']===2&&o['A']===3&&o['C']===4,
+    'Correct ! 1-Remplissage(D), 2-Bouchage(B), 3-Etiquetage(A), 4-Mise en carton(C).',
+    'Ordre : 1-Remplissage (D), 2-Bouchage (B), 3-Etiquetage (A), 4-Mise en carton (C).');
+}
+
+function valQ33(){
+  const inputs=document.querySelectorAll('.q33-in'); let ok=true;
+  inputs.forEach(inp=>{
+    const v=inp.value.trim().toUpperCase();
+    if(v!==inp.dataset.rep){ok=false;inp.classList.add('incorrect');}else inp.classList.add('correct');
+  });
+  setFB(33,ok,'Parfait ! Flacons O, Bouchons N, Gel N, Etiquettes O.','Flacons 800>700=O; Bouchons 280<700=N; Gel 50<140=N; Etiquettes 2500>700=O.');
+}
+
+function valQ35(){
+  const ok=document.getElementById('q35-date').value.trim().length>0
+    &&document.getElementById('q35-cmd').value.trim().length>0
+    &&document.getElementById('q35-ref1').value.trim().length>2
+    &&document.getElementById('q35-qty1').value.trim().length>0
+    &&document.getElementById('q35-ref2').value.trim().length>2
+    &&document.getElementById('q35-qty2').value.trim().length>0
+    &&document.getElementById('q35-urgence').value!==''
+    &&document.getElementById('q35-motif').value.trim().length>5;
+  setFB(35,ok,'Fiche complete !','Remplissez tous les champs : date, n cmd, 2 articles, quantites, urgence, motif.');
+}
+
+function getAns(n){
+  try{
+    if(n===1){return 'Calcul: '+(document.getElementById('q1-calc').value||'-')+' => '+(document.getElementById('q1-ans').value||'-')+' pots';}
+    if(n===2){return 'Calcul: '+(document.getElementById('q2-calc').value||'-')+' => '+(document.getElementById('q2-ans').value||'-')+' pots';}
+    if(n===3){return Array.from(document.querySelectorAll('input[name="q3"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===4){const v=document.querySelector('input[name="q4"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+    if(n===5){return 'Calcul: '+(document.getElementById('q5-calc').value||'-')+' => '+(document.getElementById('q5-ans').value||'-')+' pots';}
+    if(n===6){return 'Calcul: '+(document.getElementById('q6-calc').value||'-')+' => '+(document.getElementById('q6-ans').value||'-')+' rotations';}
+    if(n===7){return Array.from(document.querySelectorAll('.q7-in')).map(i=>i.value||'?').join(' / ');}
+    if(n===8){return Array.from(document.querySelectorAll('input[name="q8"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===9){return document.getElementById('q9-ans').value||'-';}
+    if(n===10){return 'Calcul: '+(document.getElementById('q10-calc').value||'-')+' => '+(document.getElementById('q10-ans').value||'-')+' %';}
+    if(n===11){return 'Calcul: '+(document.getElementById('q11-calc').value||'-')+' => '+(document.getElementById('q11-ans').value||'-')+' %';}
+    if(n===12){return 'Calcul: '+(document.getElementById('q12-calc').value||'-')+' => '+(document.getElementById('q12-ans').value||'-')+' %';}
+    if(n===13){return 'Calcul: '+(document.getElementById('q13-calc').value||'-')+' => '+(document.getElementById('q13-ans').value||'-')+' flac/h';}
+    if(n===14){return 'Calcul: '+(document.getElementById('q14-calc').value||'-')+' => '+(document.getElementById('q14-ans').value||'-')+' flacons';}
+    if(n===15){const v=document.querySelector('input[name="q15a"]:checked');return (v?v.closest('.option-item').textContent.trim():'-')+' | Procedure: '+document.getElementById('q15-proc').value;}
+    if(n===16){const v=document.querySelector('input[name="q16"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+    if(n===17){return document.getElementById('q17-ans').value||'-';}
+    if(n===18){return Array.from(document.querySelectorAll('input[name="q18"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===19){return document.getElementById('q19-ans').value||'-';}
+    if(n===20){return document.getElementById('q20-ans').value||'-';}
+    if(n===21){return (document.getElementById('q21-ans').value||'-')+' pots/h';}
+    if(n===22){return Array.from(document.querySelectorAll('input[name="q22"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===23){const v=document.querySelector('input[name="q23"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+    if(n===24){const v=document.querySelector('input[name="q24"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+    if(n===25){return Array.from(document.querySelectorAll('input[name="q25"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===26){return Array.from(document.querySelectorAll('input[name="q26"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===27){const o={};document.querySelectorAll('.q27-order').forEach(i=>{o[i.dataset.action]=i.value||'?';});return 'A='+o['A']+' B='+o['B']+' C='+o['C']+' D='+o['D'];}
+    if(n===28){return 'Calcul: '+(document.getElementById('q28-calc').value||'-')+' => '+(document.getElementById('q28-ans').value||'-')+' flacons';}
+    if(n===29){return Array.from(document.querySelectorAll('input[name="q29"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===30){const v=document.querySelector('input[name="q30"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+    if(n===31){return 'Calcul: '+(document.getElementById('q31-calc').value||'-')+' => '+(document.getElementById('q31-ans').value||'-')+' L';}
+    if(n===32){return 'Calcul: '+(document.getElementById('q32-calc').value||'-')+' => '+(document.getElementById('q32-ans').value||'-')+' flacons';}
+    if(n===33){return Array.from(document.querySelectorAll('.q33-in')).map(i=>i.value||'?').join(' / ');}
+    if(n===34){return 'Calcul: '+(document.getElementById('q34-calc').value||'-')+' => '+(document.getElementById('q34-ans').value||'-')+' min';}
+    if(n===35){return 'Date:'+document.getElementById('q35-date').value+' Cmd:'+document.getElementById('q35-cmd').value+' Art1:'+document.getElementById('q35-ref1').value+'('+document.getElementById('q35-qty1').value+') Art2:'+document.getElementById('q35-ref2').value+'('+document.getElementById('q35-qty2').value+') Urg:'+document.getElementById('q35-urgence').value;}
+    if(n===36){return 'Calcul: '+(document.getElementById('q36-calc').value||'-')+' => '+(document.getElementById('q36-ans').value||'-')+' EUR TTC';}
+    if(n===37){return 'Calcul: '+(document.getElementById('q37-calc').value||'-')+' => '+(document.getElementById('q37-ans').value||'-')+' flacons';}
+    if(n===38){return 'Calcul: '+(document.getElementById('q38-calc').value||'-')+' => '+(document.getElementById('q38-ans').value||'-')+' pots';}
+    if(n===39){return Array.from(document.querySelectorAll('input[name="q39"]:checked')).map(c=>c.value).join(', ')||'-';}
+    if(n===40){const v=document.querySelector('input[name="q40"]:checked');return v?v.closest('.option-item').textContent.trim():'-';}
+  }catch(e){return '-';}return '-';
+}
+
+// ============================================================
+// GENERATEUR PDF PUR JS (sans bibliothèque externe)
+// ============================================================
+function genPDF(nom, prenom, classe, pts, dateStr, stats) {
+  const W=595, H=842, ML=40, MR=40, MT=40;
+  let pages=[]; 
+  let curPage=null;
+  let y=0;
+
+  function newPage(){
+    curPage={parts:[]};
+    pages.push(curPage);
+    y=H-MT;
+  }
+  function checkY(needed){if(!curPage||y<40+needed)newPage();}
+
+  function safe(s){
+    return String(s||'')
+      .replace(/[éèêëÉÈÊË]/g,'e').replace(/[àâäÀÂÄ]/g,'a')
+      .replace(/[ùûüÙÛÜ]/g,'u').replace(/[îïÎÏ]/g,'i')
+      .replace(/[ôöÔÖ]/g,'o').replace(/[çÇ]/g,'c')
+      .replace(/[ñÑ]/g,'n').replace(/[°]/g,' ')
+      .replace(/[–—]/g,'-').replace(/[""\u00ab\u00bb]/g,'"')
+      .replace(/['']/g,"'").replace(/\u2026/g,'...')
+      .replace(/\u2705|\u2714|\[OK\]|\[ok\]/g,'[OK]')
+      .replace(/\u274c|\u2716|\[X\]|\[x\]/g,'[X]')
+      .replace(/\u26a0|\ufe0f|\[!\]/g,'[!]')
+      .replace(/[^\x20-\x7E]/g,'?')
+      .replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
+  }
+
+  function txt(s,x,yy,sz,bold,r,g,b){
+    r=r===undefined?0:r;g=g===undefined?0:g;b=b===undefined?0:b;
+    const fn=bold?'/F2':'/F1';
+    curPage.parts.push(`BT ${fn} ${sz} Tf ${r} ${g} ${b} rg ${x} ${yy} Td (${safe(s)}) Tj ET`);
+  }
+  function filledRect(x,yy,w,h,r,g,b){
+    curPage.parts.push(`${r} ${g} ${b} rg ${x} ${yy} ${w} ${h} re f 0 0 0 rg`);
+  }
+  function hLine(x1,yy,x2,lw,r,g,b){
+    r=r||0.7;g=g||0.7;b=b||0.7;lw=lw||0.5;
+    curPage.parts.push(`${r} ${g} ${b} RG ${lw} w ${x1} ${yy} m ${x2} ${yy} l S 0 0 0 RG`);
+  }
+
+  const CW = W-ML-MR; // content width
+
+  function wrapLines(s, maxChars){
+    const words=String(s||'').split(' ');
+    const lines=[]; let cur='';
+    for(const w of words){
+      if(((cur?cur+' ':'')+w).length<=maxChars){cur=(cur?cur+' ':'')+w;}
+      else{if(cur)lines.push(cur);cur=w;}
+    }
+    if(cur)lines.push(cur);
+    return lines.length?lines:[''];
+  }
+
+  function addTxt(s, sz, bold, r, g, b, indent){
+    sz=sz||10;indent=indent||0;
+    const maxChars=Math.floor((CW-indent)/(sz*0.52));
+    const lines=wrapLines(s,maxChars);
+    for(const l of lines){
+      checkY(sz+5);
+      txt(l,ML+indent,y,sz,bold||false,r||0,g||0,b||0);
+      y-=(sz+4);
+    }
+  }
+  function addSp(h){y-=(h||8);}
+  function addHLine(){checkY(8);hLine(ML,y,W-MR);y-=8;}
+
+  function addHeader2(s,r,g,b,fr,fg,fb){
+    checkY(20);
+    const h=16;
+    filledRect(ML,y-2,CW,h,r,g,b);
+    txt(s,ML+5,y+1,10,true,fr||1,fg||1,fb||1);
+    y-=(h+4);
+  }
+
+  function addTableRow(cells,widths,isHdr,isEven){
+    const rh=13;checkY(rh+2);
+    const rowY=y-2;
+    if(isHdr)filledRect(ML,rowY,CW,rh,0.17,0.37,0.59);
+    else if(isEven)filledRect(ML,rowY,CW,rh,0.94,0.96,0.97);
+    let x=ML;
+    cells.forEach((c,i)=>{
+      const s=String(c||'').substring(0,widths[i]>100?60:20);
+      txt(s,x+2,y,8,isHdr,isHdr?1:0,isHdr?1:0,isHdr?1:0);
+      x+=widths[i];
+    });
+    y-=rh;
+  }
+
+  // ---- Construire le document ----
+  newPage();
+
+  // En-tête bleu
+  const headerH = 28;
+  filledRect(ML, y-4, CW, headerH, 0.17, 0.37, 0.59);
+  txt('TP - Gestion de Commande et de Stock - Machine Polyprod PP30', ML+6, y+10, 10, true, 1,1,1);
+  txt(nom.toUpperCase()+' '+prenom+' | Classe: '+classe+' | Date: '+dateStr, ML+6, y-1, 9, false, 0.85,0.95,1);
+  y -= (headerH+8);
+
+  // Note
+  checkY(30);
+  filledRect(ML, y-4, CW, 26, 0.93,0.97,0.93);
+  // Évaluation Pronote dans le PDF
+  const filiere2 = getFiliere(classe);
+  const ret2 = COMP_RETENUES[filiere2];
+  const cs2 = calcCompScores(filiere2);
+  const totalPts = ret2.reduce((s,c)=>{ const t=cs2.cT[c]||0; const ok=t>0?cs2.cS[c]:0; const pct=t>0?ok/t:0; return s+getPronoteNiveau(pct).pts; },0);
+  const maxPts = ret2.length * 6;
+  txt('EVALUATION PAR COMPETENCES PRONOTE | Filiere: '+filiere2+' | '+ret2.join(', ')+' | Total: '+totalPts+'/'+maxPts+' pts', ML+6, y+6, 8, true, 0.15,0.33,0.07);
+  const mention = ''; // supprimé - éval Pronote
+  // mention numérique supprimée
+  y -= 36; addSp(4);
+
+  // Compétences
+  const cS={},cT={};
+  Object.keys(scores).forEach(qid=>{const c=qComp[qid];if(!cS[c]){cS[c]=0;cT[c]=0;}cS[c]+=scores[qid];cT[c]++;});
+  addHeader2('EVALUATION PAR COMPETENCES - CODE PRONOTE', 0.15,0.33,0.07);
+  const filiere3=getFiliere(classe);
+  const ret3=COMP_RETENUES[filiere3];
+  const cs3=calcCompScores(filiere3);
+  addTxt('Filiere : '+FILIERE_LABEL[filiere3], 9, true, 0.1,0.23,0.42);
+  addSp(3);
+  addTableRow(['Code','Competence evaluee','Score','Niveau Pronote','Points'],[35,155,45,100,CW-335],true);
+  let ev3=false;
+  ret3.forEach(c=>{
+    const t3=cs3.cT[c]||0; const ok3=t3>0?cs3.cS[c]:0;
+    const pct3=t3>0?ok3/t3:0; const niv3=getPronoteNiveau(pct3);
+    addTableRow([c, getCompLib(c,filiere3).substring(0,38), (t3>0?ok3+'/'+t3:'N/A'), niv3.label, niv3.pts+' pt'+(niv3.pts>1?'s':'')],[35,155,45,100,CW-335],false,ev3);
+    ev3=!ev3;
+  });
+  addSp(8); addHLine(); addSp(4);
+
+  // Détail questions
+  addHeader2('DETAIL DES REPONSES - PARTIE 1 (Q1-Q10)', 0.18,0.48,0.27);
+  const wQ=[22,100,50,55,CW-227];
+  addTableRow(['N','Question','Comp.','Resultat','Reponse donnee'],wQ,true);
+  for(let i=1;i<=10;i++){
+    const ok=scores['q'+i];
+    const res=ok===undefined?'- N/R':(ok===1?'[OK] Juste':'[X] Faux');
+    addTableRow([i,qTitres[i],qComp['q'+i]||'-',res,getAns(i).substring(0,55)],wQ,false,i%2===0);
+  }
+  addSp(6);
+  addHeader2('DETAIL DES REPONSES - PARTIE 2 (Q11-Q20)', 0.18,0.48,0.27);
+  addTableRow(['N','Question','Comp.','Resultat','Reponse donnee'],wQ,true);
+  for(let i=11;i<=20;i++){
+    const ok=scores['q'+i];
+    const res=ok===undefined?'- N/R':(ok===1?'[OK] Juste':'[X] Faux');
+    addTableRow([i,qTitres[i],qComp['q'+i]||'-',res,getAns(i).substring(0,55)],wQ,false,i%2===0);
+  }
+  addSp(6);
+  addHeader2('DETAIL DES REPONSES - PARTIE 3 (Q21-Q30)', 0.18,0.48,0.27);
+  addTableRow(['N','Question','Comp.','Resultat','Reponse donnee'],wQ,true);
+  for(let i=21;i<=30;i++){
+    const ok=scores['q'+i];
+    const res=ok===undefined?'- N/R':(ok===1?'[OK] Juste':'[X] Faux');
+    addTableRow([i,qTitres[i],qComp['q'+i]||'-',res,getAns(i).substring(0,55)],wQ,false,i%2===0);
+  }
+  addSp(6);
+  addHeader2('DETAIL DES REPONSES - PARTIE 4 (Q31-Q40)', 0.18,0.48,0.27);
+  addTableRow(['N','Question','Comp.','Resultat','Reponse donnee'],wQ,true);
+  for(let i=31;i<=40;i++){
+    const ok=scores['q'+i];
+    const res=ok===undefined?'- N/R':(ok===1?'[OK] Juste':'[X] Faux');
+    addTableRow([i,qTitres[i],qComp['q'+i]||'-',res,getAns(i).substring(0,55)],wQ,false,i%2===0);
+  }
+  addSp(8); addHLine(); addSp(4);
+
+  // Corrections
+  addHeader2('REPONSES ATTENDUES (CORRECTION)', 0.17,0.37,0.59);
+  for(let i=1;i<=40;i++){
+    checkY(14);
+    const ok=scores['q'+i];
+    const okTxt=ok===undefined?'[N/R]':(ok===1?'[OK]':'[X] ');
+    addTxt('Q'+i+' '+okTxt+' '+qTitres[i], 9, true, 0.17,0.37,0.59, 0);
+    addTxt('Attendu: '+corrections[i], 8, false, 0.2,0.5,0.2, 8);
+    const rep=getAns(i);
+    if(rep&&rep!=='-')addTxt('Repondu: '+rep.substring(0,120), 8, false, 0.3,0.3,0.3, 8);
+    addSp(3);
+  }
+
+  // ---- Section tracking comportemental ----
+  if (stats) {
+    addHeader2('INDICATEURS DE COMPORTEMENT DURANT LE TP', 0.17,0.37,0.59);
+
+    // Ligne 1 : temps
+    const totalStr  = fmtDuration(stats.totalMs);
+    const keyStr    = fmtDuration(stats.keyMs);
+    const inactStr  = fmtDuration(stats.inactMs);
+    const chronoSec = stats.tempsPasseElapsed;
+    const hh = Math.floor(chronoSec/3600);
+    const mm = Math.floor((chronoSec%3600)/60);
+    const ss = chronoSec%60;
+    const chronoStr = hh+'h '+String(mm).padStart(2,'0')+'min '+String(ss).padStart(2,'0')+'s';
+
+    addTxt('Temps total passe sur le TP : '+totalStr+'  |  Temps chronometre ecoule : '+chronoStr, 9, true, 0,0,0, 0);
+    addTxt('Temps actif au clavier : '+keyStr+'  |  Temps d inactivite detecte (>30s sans action) : '+inactStr, 9, false, 0.3,0.3,0.3, 0);
+    addSp(4);
+
+    // Frappe clavier
+    addTxt('Nombre de frappes clavier enregistrees : '+stats.keyCount, 9, false, 0,0,0, 0);
+    addSp(2);
+
+    // Copier-coller
+    if (stats.pasteCount === 0) {
+      addTxt('Copier-coller : aucun coller detecte durant le TP', 9, false, 0.18,0.48,0.27, 0);
+    } else {
+      addTxt('Copier-coller detecte : '+stats.pasteCount+' occurrence(s)', 9, true, 0.7,0.1,0.1, 0);
+      stats.pasteDetails.forEach(p => {
+        addTxt('  - Coller dans '+p.zone+' a '+p.heure, 8, false, 0.5,0.1,0.1, 8);
+      });
+    }
+    addSp(6);
+
+    // Horodatage par question
+    addHeader2('HORODATAGE DES VALIDATIONS PAR QUESTION', 0.18,0.48,0.27);
+    const wT=[22,85,65,65,CW-237];
+    addTableRow(['N','Question','Heure valid.','Tps ecoule','Observations'],wT,true);
+    let rowEven=false;
+    for(let i=1;i<=40;i++){
+      const qt=qTimestamps['q'+i];
+      let heureStr='-', dureeStr='-', obs='';
+      if(qt && qt.validated){
+        const d=new Date(qt.validated);
+        heureStr=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
+        dureeStr=fmtDuration(qt.seconds*1000);
+        if(qt.seconds < 8) obs='[!] Tres rapide';
+        else if(qt.seconds > 600) obs='Long (>10min)';
+      } else {
+        obs='Non repondu';
+      }
+      addTableRow([i, qTitres[i].substring(0,30), heureStr, dureeStr, obs], wT, false, rowEven);
+      rowEven=!rowEven;
+    }
+    addSp(8);
+  }
+
+  // Pied de page sur chaque page
+  pages.forEach((p,pi)=>{
+    p.parts.push(`0.6 0.6 0.6 rg`);
+    p.parts.push(`BT /F1 7 Tf 0.5 0.5 0.5 rg ${ML} 22 Td (TP Polyprod - Lycee Vaucanson - ${dateStr} - Page ${pi+1}/${pages.length}) Tj ET`);
+    p.parts.push(`0 0 0 rg`);
+  });
+
+  // ---- Assemblage PDF ----
+  let pdf='%PDF-1.4\n%\xff\xff\xff\xff\n';
+  const rebuiltOffsets={};
+
+  function addObj(content){
+    const idx=Object.keys(rebuiltOffsets).length+1;
+    rebuiltOffsets[idx]=pdf.length;
+    pdf+=`${idx} 0 obj\n${content}\nendobj\n`;
+    return idx;
+  }
+
+  const f1=addObj('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+  const f2=addObj('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+  const fd=`<< /F1 ${f1} 0 R /F2 ${f2} 0 R >>`;
+
+  const pageRefs=[];
+  for(const p of pages){
+    const stream=p.parts.join('\n');
+    const cIdx=addObj(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+    const pIdx=addObj(`<< /Type /Page /Parent __PAGES__ /MediaBox [0 0 ${W} ${H}] /Contents ${cIdx} 0 R /Resources << /Font ${fd} >> >>`);
+    pageRefs.push(pIdx);
+  }
+
+  const pagesIdx=addObj(`<< /Type /Pages /Kids [${pageRefs.map(r=>r+' 0 R').join(' ')}] /Count ${pages.length} >>`);
+  const catIdx=addObj(`<< /Type /Catalog /Pages ${pagesIdx} 0 R >>`);
+
+  // Corriger les références __PAGES__
+  pdf=pdf.split('__PAGES__').join(`${pagesIdx} 0 R`);
+
+  // Recalculer les offsets après remplacement
+  const finalOffsets={};
+  let pos=0;
+  for(const line of pdf.split('\n')){
+    const m=line.match(/^(\d+) 0 obj$/);
+    if(m)finalOffsets[parseInt(m[1])]=pos;
+    pos+=line.length+1;
+  }
+
+  const xrefPos=pdf.length;
+  const numObjs=Object.keys(finalOffsets).length+1;
+  let xref=`xref\n0 ${numObjs}\n`;
+  xref+='0000000000 65535 f \n';
+  for(let i=1;i<numObjs;i++){
+    xref+=String(finalOffsets[i]||0).padStart(10,'0')+' 00000 n \n';
+  }
+  xref+=`trailer\n<< /Size ${numObjs} /Root ${catIdx} 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;
+  pdf+=xref;
+  return pdf;
+}
+
+// showFinal remplacée par version Pronote (voir bas du fichier)
+
+// ====== TELECHARGER PDF ======
+function telechargerPDF(){
+  const nom=document.getElementById('eleve-nom').value.trim()||'Eleve';
+  const prenom=document.getElementById('eleve-prenom').value.trim()||'';
+  const classe=document.getElementById('eleve-classe').value||'Classe';
+  const pts=Object.values(scores).reduce((a,b)=>a+b,0);
+  const dateStr=new Date().toLocaleDateString('fr-FR');
+
+  if(!document.getElementById('final-section')||document.getElementById('final-section').style.display==='none'){
+    if(!validerIdentite()) return;
+    showFinal();
+  }
+
+  const stats=getTrackingStats();
+  const pdfStr=genPDF(nom,prenom,classe,pts,dateStr,stats);
+
+  // Convertir en binaire
+  const bytes=new Uint8Array(pdfStr.length);
+  for(let i=0;i<pdfStr.length;i++) bytes[i]=pdfStr.charCodeAt(i)&0xff;
+  const blob=new Blob([bytes],{type:'application/pdf'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='TP_Polyprod_'+classe+'_'+nom+'_'+prenom+'_'+pts+'sur40.pdf';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
+}
+
+// ====== OUVRIR DEPOT ======
+function ouvrirDepot(){
+  const classeTokens={
+    '2PMIA1':'SFkasij3W8ZdY6X','2PMIA2':'KWTiQL5cLkQnRkw','2PMIA3':'Exk55DptbrJHmL8',
+    '2PMIA4':'NyFcyoajmiDHWBN','2PMIA5':'wbF4sqQkLCCr5Nj','1PLP':'Q2LF28DBwcDbaZ3',
+    'TPLP':'rq7TaGNDJc7MxZn','1CIP G1':'ZDYKjyNzsF4LNNC','1CIP G2':'KQp5LCtEKJsGXRT',
+    '2CIP G1':'kybKoENkrz9qKEo','2CIP G2':'5XdDxzyAJDFSgF4'
+  };
+  const classe=document.getElementById('eleve-classe').value;
+  if(!classe){alert('Selectionnez votre classe en haut du TP.');return;}
+  const token=classeTokens[classe];
+  if(!token){alert('Classe non reconnue.');return;}
+  const url='https://nuage01.apps.education.fr/index.php/s/'+token;
+  const st=document.getElementById('send-status');
+  st.innerHTML='✅ Dossier de la classe <strong>'+classe+'</strong> ouvert dans un nouvel onglet.<br>'
+    +'<span style="font-size:.84rem;">Deposez-y votre fichier PDF.</span><br>'
+    +'<a href="'+url+'" target="_blank" style="color:#2b5f96;font-size:.82rem;">Cliquer ici si le dossier ne s\'est pas ouvert</a>';
+  st.className='success';
+  window.open(url,'_blank');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SYSTÈME ÉVALUATION PRONOTE - CODE COULEUR OFFICIEL
+// ══════════════════════════════════════════════════════════════════════════════
+
+const PRONOTE_NIVEAUX = [
+  {hex:'#275317', label:'Très bonne maîtrise',    pts:6, seuil:0.85, textColor:'#fff'},
+  {hex:'#4EA72E', label:'Maîtrise satisfaisante', pts:5, seuil:0.70, textColor:'#fff'},
+  {hex:'#92D050', label:'Presque maîtrisé',       pts:4, seuil:0.50, textColor:'#333'},
+  {hex:'#FFFF00', label:'Maîtrise fragile',        pts:3, seuil:0.35, textColor:'#333'},
+  {hex:'#FFC000', label:'Début de maîtrise',      pts:2, seuil:0.15, textColor:'#333'},
+  {hex:'#EE0000', label:'Maîtrise insuffisante',  pts:1, seuil:0.00, textColor:'#fff'},
+];
+
+// Compétences par filière (référentiel officiel)
+const COMP_CIP = {
+  CP01:"Communiquer en situation professionnelle et utiliser l'outil adapté pour rendre compte",
+  CP02:"S'informer et informer au cours de l'activité professionnelle",
+  CP03:"Préparer le travail au poste",
+  CP04:"Conduire l'installation à partir du poste de travail",
+  CP05:"Recueillir des données liées au produit et à la production",
+  CP06:"Identifier des risques au poste de travail",
+  CP07:"Appliquer des modes opératoires conformes aux objectifs de qualité et sécurité",
+};
+const COMP_PMIA = {
+  'CP1.1':"Décoder l'organisation de l'installation (structurelle, fonctionnelle, temporelle)",
+  'CP2.1':"Approvisionner et préparer les installations, matériels, produits et accessoires",
+  'CP2.2':"Préparer les documents nécessaires à la maintenance, organiser son intervention",
+  'CP2.3':"Identifier les risques pour les biens et les personnes",
+  'CP2.4':"Mettre en oeuvre les mesures de prévention associées aux risques identifiés",
+  'CP3.1':"Piloter une installation ou des modules en mode normal (démarrage)",
+  'CP3.2':"Piloter une installation ou des modules en mode normal (conduite)",
+  'CP3.3':"Assurer le suivi de la production (analyse des indicateurs, paramètres...)",
+  'CP4.1':"Réaliser des interventions de maintenance de niveau 1 (inspection, surveillance)",
+  'CP4.2':"Réaliser des interventions de maintenance de niveau 2 (dépose, repose pièces d'usure)",
+  'CP5.1':"Adopter une démarche éco-responsable",
+  'CP6.1':"Communiquer à l'écrit et/ou à l'oral dans son environnement professionnel",
+  'CP6.2':"Utiliser les outils numériques et informatiques",
+};
+const COMP_PLP = {
+  CP01:"Communiquer et rendre compte avec l'outil de communication adapté",
+  CP02:"S'informer et analyser la situation, informer au cours de l'activité professionnelle",
+  CP03:"Préparer le travail d'organisation et de réalisation du pilotage",
+  CP04:"Piloter une ligne ou un système de production",
+  CP05:"Assurer le suivi de production lié à l'analyse des indicateurs, paramètres et spécifications",
+  CP06:"Choisir et combiner des modes opératoires pour faire face aux situations",
+  CP07:"Gérer les compétences techniques des personnels affectés sur la ligne",
+  CP08:"Proposer des améliorations et des pistes de résolution de problèmes",
+  CP09:"Identifier des risques pour la production, les biens, l'environnement et la sécurité",
+  CP10:"Appliquer les mesures de prévention de tous les risques identifiés",
+};
+
+// Mapping : qComp du TP (logique interne) → code référentiel réel par filière
+const QCOMP_TO_CIP = {
+  q1:'CP04',
+  q2:'CP03',
+  q3:'CP04',
+  q4:'CP04',
+  q5:'CP03',
+  q6:'CP04',
+  q7:'CP04',
+  q8:'CP03',
+  q9:'CP04',
+  q10:'CP04',
+  q11:'CP05',
+  q12:'CP05',
+  q13:'CP05',
+  q14:'CP05',
+  q15:'CP05',
+  q16:'CP05',
+  q17:'CP05',
+  q18:'CP05',
+  q19:'CP01',
+  q20:'CP01',
+  q21:'CP02',
+  q22:'CP02',
+  q23:'CP02',
+  q24:'CP02',
+  q25:'CP02',
+  q26:'CP03',
+  q27:'CP03',
+  q28:'CP03',
+  q29:'CP02',
+  q30:'CP02',
+  q31:'CP04',
+  q32:'CP04',
+  q33:'CP03',
+  q34:'CP04',
+  q35:'CP01',
+  q36:'CP03',
+  q37:'CP04',
+  q38:'CP04',
+  q39:'CP01',
+  q40:'CP01'
+};
+const QCOMP_TO_PMIA = {
+  q1:'CP3.3',
+  q2:'CP2.1',
+  q3:'CP3.3',
+  q4:'CP3.3',
+  q5:'CP2.1',
+  q6:'CP3.3',
+  q7:'CP3.3',
+  q8:'CP2.1',
+  q9:'CP3.3',
+  q10:'CP3.3',
+  q11:'CP3.3',
+  q12:'CP3.3',
+  q13:'CP3.3',
+  q14:'CP3.3',
+  q15:'CP3.3',
+  q16:'CP3.3',
+  q17:'CP5.1',
+  q18:'CP3.3',
+  q19:'CP6.1',
+  q20:'CP6.1',
+  q21:'CP1.1',
+  q22:'CP1.1',
+  q23:'CP1.1',
+  q24:'CP1.1',
+  q25:'CP1.1',
+  q26:'CP2.1',
+  q27:'CP1.1',
+  q28:'CP1.1',
+  q29:'CP1.1',
+  q30:'CP1.1',
+  q31:'CP3.1',
+  q32:'CP3.1',
+  q33:'CP2.1',
+  q34:'CP3.1',
+  q35:'CP6.1',
+  q36:'CP2.1',
+  q37:'CP3.1',
+  q38:'CP3.1',
+  q39:'CP6.1',
+  q40:'CP6.1'
+};
+const QCOMP_TO_PLP = {
+  q1:'CP05',
+  q2:'CP03',
+  q3:'CP05',
+  q4:'CP05',
+  q5:'CP03',
+  q6:'CP05',
+  q7:'CP05',
+  q8:'CP03',
+  q9:'CP05',
+  q10:'CP05',
+  q11:'CP05',
+  q12:'CP05',
+  q13:'CP05',
+  q14:'CP08',
+  q15:'CP05',
+  q16:'CP08',
+  q17:'CP08',
+  q18:'CP08',
+  q19:'CP01',
+  q20:'CP01',
+  q21:'CP02',
+  q22:'CP02',
+  q23:'CP02',
+  q24:'CP02',
+  q25:'CP02',
+  q26:'CP03',
+  q27:'CP03',
+  q28:'CP03',
+  q29:'CP02',
+  q30:'CP02',
+  q31:'CP04',
+  q32:'CP04',
+  q33:'CP03',
+  q34:'CP04',
+  q35:'CP01',
+  q36:'CP03',
+  q37:'CP04',
+  q38:'CP04',
+  q39:'CP01',
+  q40:'CP01'
+};
+
+// Compétences retenues pour ce TP (max 3 par filière)
+const COMP_RETENUES = {
+  CIP:  ['CP02','CP03','CP04'],
+  PMIA: ['CP1.1','CP2.1','CP3.3'],
+  PLP:  ['CP02','CP03','CP05'],
+};
+
+const FILIERE_LABEL = {
+  CIP:  'CAP CIP – Conduite d\'Installation de Production',
+  PMIA: 'BAC PRO PMIA – Maintenance des Systèmes de Production',
+  PLP:  'BAC PRO PLP – Pilotage de Ligne de Production',
+};
+
+function getFiliere(classe) {
+  if(['2CIP G1','2CIP G2','1CIP G1','1CIP G2'].includes(classe)) return 'CIP';
+  if(['2PMIA1','2PMIA2','2PMIA3','2PMIA4','2PMIA5'].includes(classe)) return 'PMIA';
+  if(['1PLP','TPLP'].includes(classe)) return 'PLP';
+  return 'PLP';
+}
+
+function getCompLib(code, filiere) {
+  if(filiere==='CIP')  return COMP_CIP[code]  || code;
+  if(filiere==='PMIA') return COMP_PMIA[code] || code;
+  return COMP_PLP[code] || code;
+}
+
+function getQCompMap(filiere) {
+  if(filiere==='CIP')  return QCOMP_TO_CIP;
+  if(filiere==='PMIA') return QCOMP_TO_PMIA;
+  return QCOMP_TO_PLP;
+}
+
+function getPronoteNiveau(pct) {
+  for(const n of PRONOTE_NIVEAUX) {
+    if(pct >= n.seuil) return n;
+  }
+  return PRONOTE_NIVEAUX[PRONOTE_NIVEAUX.length-1];
+}
+
+function calcCompScores(filiere) {
+  const map  = getQCompMap(filiere);
+  const ret  = COMP_RETENUES[filiere];
+  const cS   = {}, cT = {};
+  ret.forEach(c => { cS[c]=0; cT[c]=0; });
+  Object.keys(scores).forEach(qid => {
+    const code = map[qid];
+    if(code && ret.includes(code)) {
+      cS[code] += scores[qid];
+      cT[code]++;
+    }
+  });
+  return {cS, cT};
+}
+
+function buildPronoteHTML(classe) {
+  const filiere  = getFiliere(classe);
+  const ret      = COMP_RETENUES[filiere];
+  const {cS, cT} = calcCompScores(filiere);
+
+  let html = `<div class="eval-intro-box">`;
+  html += `<strong>📋 Filière :</strong> ${FILIERE_LABEL[filiere]}<br>`;
+  html += `<strong>🎯 Compétences évaluées :</strong> ${ret.join(' · ')}`;
+  html += `</div>`;
+
+  ret.forEach(code => {
+    const total = cT[code] || 0;
+    const ok    = total > 0 ? cS[code] : 0;
+    const pct   = total > 0 ? ok / total : 0;
+    const niv   = getPronoteNiveau(pct);
+    const lib   = getCompLib(code, filiere);
+    const scoreStr = total > 0 ? `${ok}/${total} questions` : 'Non évaluée';
+
+    html += `<div class="pronote-row" style="background:${niv.hex}22;border-color:${niv.hex};">`;
+    html += `<div class="pronote-dot" style="background:${niv.hex};"></div>`;
+    html += `<div class="pronote-info">`;
+    html += `<div class="pronote-comp-code">${code}</div>`;
+    html += `<div class="pronote-comp-lib">${lib}</div>`;
+    html += `<div class="pronote-score">${scoreStr}</div>`;
+    html += `</div>`;
+    html += `<div class="pronote-right">`;
+    html += `<div class="pronote-niveau" style="color:${niv.hex==='#FFFF00'||niv.hex==='#92D050'||niv.hex==='#FFC000'?'#555':niv.hex};">${niv.label}</div>`;
+    html += `<div class="pronote-pts">${niv.pts} point${niv.pts>1?'s':''} Pronote</div>`;
+    html += `</div>`;
+    html += `</div>`;
+  });
+
+  // Légende Pronote complète
+  html += `<div class="pronote-legende">`;
+  html += `<div class="pronote-legende-title">Échelle Pronote complète</div>`;
+  html += `<div class="pronote-legende-grid">`;
+  PRONOTE_NIVEAUX.forEach(n => {
+    html += `<div class="pronote-leg-item">`;
+    html += `<div class="pronote-leg-dot" style="background:${n.hex};border:1px solid rgba(0,0,0,.15);"></div>`;
+    html += `<span>${n.label} (${n.pts} pt${n.pts>1?'s':''})</span>`;
+    html += `</div>`;
+  });
+  html += `</div></div>`;
+
+  return html;
+}
+
+// ── Validation identité ───────────────────────────────────────────────────────
+function validerIdentite() {
+  const nom    = document.getElementById('eleve-nom').value.trim();
+  const prenom = document.getElementById('eleve-prenom').value.trim();
+  const classe = document.getElementById('eleve-classe').value;
+  let ok = true;
+
+  [['eleve-nom','hint-nom',!nom],['eleve-prenom','hint-prenom',!prenom],['eleve-classe','hint-classe',!classe]].forEach(([fid,hid,err]) => {
+    const el = document.getElementById(fid);
+    const hd = document.getElementById(hid);
+    if(!el||!hd) return;
+    if(err){ el.classList.add('field-error'); hd.classList.add('show'); ok=false; }
+    else   { el.classList.remove('field-error'); hd.classList.remove('show'); }
+  });
+  if(!ok) document.querySelector('.eleve-box').scrollIntoView({behavior:'smooth'});
+  return ok;
+}
+
+// ── Surcharge showFinal ───────────────────────────────────────────────────────
+function showFinal() {
+  if(!validerIdentite()) return;
+  const classe = document.getElementById('eleve-classe').value;
+  document.getElementById('comp-eval-container').innerHTML = buildPronoteHTML(classe);
+  document.getElementById('final-section').style.display = 'block';
+  document.getElementById('final-section').scrollIntoView({behavior:'smooth'});
+}
+
+</script>
+</body>
+</html>
